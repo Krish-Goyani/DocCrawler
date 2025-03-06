@@ -13,3 +13,5 @@ fastembed
 sentence-transformers
 pinecone-text
 playwright
+pydantic-settings
+pydantic
