@@ -4,3 +4,12 @@ autoflake
 isort 
 vulture
 uvicorn
+openai
+pinecone[grpc]
+crawl4ai
+google-genai
+python-dotenv
+fastembed
+sentence-transformers
+pinecone-text
+playwright
