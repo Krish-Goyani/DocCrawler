@@ -4,7 +4,7 @@ from src.app.config.database import mongodb_database
 from fastapi import Depends
 from src.app.utils.error_handler import JsonResponseError
 from src.app.models.domain.error import Error
-x
+
 class ErrorRepo:
     def __init__(self, collection =  Depends(mongodb_database.get_error_collection)) -> None:
         self.collection = collection
