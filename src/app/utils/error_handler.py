@@ -1,5 +1,5 @@
-from functools import wraps
 import traceback  # Import traceback module to capture the call stack
+from functools import wraps
 
 from fastapi.responses import JSONResponse
 
@@ -34,7 +34,9 @@ def error_handler(func):
                 content={
                     "detail": "Internal Server Error",
                     "error": str(exc),
-                    "traceback": trace.split("\n"),  # Split into list for better readability
+                    "traceback": trace.split(
+                        "\n"
+                    ),  # Split into list for better readability
                 },
             )
 

@@ -1,1 +1,6 @@
 fastapi[standard]
+black 
+autoflake 
+isort 
+vulture
+uvicorn
