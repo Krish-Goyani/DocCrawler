@@ -11,6 +11,7 @@ class ErrorRepo:
     ) -> None:
         self.collection = collection
 
+
     async def insert_error(self, error: Error):
         insert_result = await self.collection.insert_one(error.to_dict())
         if not insert_result.inserted_id:
@@ -18,3 +19,5 @@ class ErrorRepo:
                 status_code=500, detail="Failed to insert complaint"
             )
         return insert_result
+
+
