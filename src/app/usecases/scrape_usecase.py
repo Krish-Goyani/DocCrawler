@@ -17,5 +17,5 @@ class ScrapeUseCase:
 
     async def crawler_usecase(self, user_id: str, urls: List):
         user_id = await self.crawler_service.main(urls, user_id)
-        chunk_path = await self.chunking_service.start_chunking_service(user_id)
+        user_id = await self.chunking_service.start_chunking_service(user_id)
         return True
