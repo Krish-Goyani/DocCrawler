@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     INDEX_NAME: str
     INDEX_HOST: str
     JINA_API_KEY: str
+    USER_DATA : str
 
     class Config:
         env_file = "src/.env"

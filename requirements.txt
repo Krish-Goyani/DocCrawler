@@ -15,3 +15,9 @@ pinecone-text
 playwright
 pydantic-settings
 pydantic
+openai
+pinecone
+pinecone[grpc]
+pinecone[asyncio]
+bson
+motor
