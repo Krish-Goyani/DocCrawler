@@ -130,12 +130,12 @@ class CrawlerUtils:
         Saves the given results in separate JSON files inside the specified directory.
         Each key in the results dictionary becomes a JSON filename.
         """
-        os.makedirs(os.path.join(user_id,"results"), exist_ok=True)
+        os.makedirs(os.path.join(settings.USER_DATA, user_id,"results"), exist_ok=True)
 
         # Create tasks for all file saves to run in parallel
         save_tasks = []
         for filename, data in results.items():
-            file_path = os.path.join(os.path.join(user_id,"results"), f"{filename}.json")
+            file_path = os.path.join(os.path.join(settings.USER_DATA, user_id,"results"), f"{filename}.json")
 
             async def save_file(path, content):
                 async with aiofiles.open(path, "w", encoding="utf-8") as f:
