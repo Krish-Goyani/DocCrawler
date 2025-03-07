@@ -3,13 +3,14 @@ import json
 import os
 import aiofiles
 from config.settings import settings
+from fastapi import Depends
 from utils.chuking_utils import ChunkingUtils
 from utils.prompts import chunk_prompt, summary_links_prompt, summary_prompt
-from fastapi import  Depends
+
 
 class ChunkingService:
 
-    def __init__(self, chunk_utils = Depends(ChunkingUtils)) -> None:
+    def __init__(self, chunk_utils=Depends(ChunkingUtils)) -> None:
         self.chunk_llm_request_count = 0
         self.chunk_total_input_tokens = 0
         self.chunk_total_output_tokens = 0
@@ -19,13 +20,13 @@ class ChunkingService:
         self.chunk_utils = chunk_utils
 
     async def process_file(self, user_id, file_path, semaphore):
-        
 
         async with aiofiles.open(file_path, "r") as file:
             data = json.loads(await file.read())
 
         tasks = [
-            self.chunk_utils.chunk_with_gpt(user_id,
+            self.chunk_utils.chunk_with_gpt(
+                user_id,
                 f"{self.chunk_prompt}\n**INPUT:**\n{item}\n**OUTPUT:**",
                 semaphore,
             )
@@ -43,26 +44,29 @@ class ChunkingService:
 
         return final_chunks
 
-    async def process_summary_file(self,user_id,file_path):
+    async def process_summary_file(self, user_id, file_path):
 
         async with aiofiles.open(file_path, "r") as file:
             data = json.loads(await file.read())
 
-        links = self.chunk_utils.extract_hrefs(user_id,data)
+        links = self.chunk_utils.extract_hrefs(user_id, data)
         if len(links) > 180:
             links = links[:180]
-        filtered_links = await self.chunk_utils.filter_summary_links(user_id,
-            f"{summary_links_prompt}\n**INPUT:**\n{links}\n**OUTPUT:**"
+        filtered_links = await self.chunk_utils.filter_summary_links(
+            user_id, f"{summary_links_prompt}\n**INPUT:**\n{links}\n**OUTPUT:**"
         )
 
-        content_data = self.chunk_utils.fetch_content(user_id,data, filtered_links)
-        responses = await self.chunk_utils.generate_summary_chunk(user_id,
-            f"{self.summary_prompt}\n**INPUT:**\n{content_data}\n**OUTPUT:**"
+        content_data = self.chunk_utils.fetch_content(
+            user_id, data, filtered_links
+        )
+        responses = await self.chunk_utils.generate_summary_chunk(
+            user_id,
+            f"{self.summary_prompt}\n**INPUT:**\n{content_data}\n**OUTPUT:**",
         )
 
         return responses
 
-    async def start_chunking_service(self,user_id):
+    async def start_chunking_service(self, user_id):
 
         dir_path = os.path.join(user_id, "results")
 
@@ -77,9 +81,8 @@ class ChunkingService:
         for file in json_files:
             chunks = await self.process_file(user_id, file, semaphore)
             all_chunks.extend(chunks)
-            summary_chunks = await self.process_summary_file(user_id,file)
+            summary_chunks = await self.process_summary_file(user_id, file)
             all_chunks.extend(summary_chunks)
-
 
         chunk_file = os.path.join(dir_path, "all_chunks.json")
         async with aiofiles.open(chunk_file, mode="w") as chunk_f:

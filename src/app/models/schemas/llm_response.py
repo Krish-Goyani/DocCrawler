@@ -1,8 +1,11 @@
 from typing import List, Optional
+
 from pydantic import BaseModel, HttpUrl
+
 
 class FilterPromptResponse(BaseModel):
     urls: List[HttpUrl]
+
 
 class ChunkMetadata(BaseModel):
     SDK_Framework_name: str
@@ -13,12 +16,15 @@ class ChunkMetadata(BaseModel):
     has_code_snippet: bool
     version: Optional[str]
 
+
 class ChunkedData(BaseModel):
     chunked_data: str
     metadata: ChunkMetadata
 
+
 class SummaryLinksResponse(BaseModel):
     urls: List[HttpUrl]
+
 
 class SummaryMetadata(BaseModel):
     base_url: HttpUrl
@@ -27,6 +33,7 @@ class SummaryMetadata(BaseModel):
     category: str
     supported_languages: List[str]
     versions: List[str]
+
 
 class SummaryData(BaseModel):
     chunked_data: str

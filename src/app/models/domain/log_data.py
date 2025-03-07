@@ -30,7 +30,3 @@ class LogData:
             "time_taken": self.time_taken,
             "request_type": self.request_type,
         }
-
-
-
-
