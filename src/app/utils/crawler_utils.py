@@ -31,7 +31,7 @@ from src.app.repositories.llm_usage_repository import LLMUsageRepository
 from src.app.models.schemas.llm_response import FilterPromptResponse
 
 class CrawlerUtils:
-    def __init__(self,user_id, error_repo = Depends(ErrorRepo), llm_usage_repo = Depends(LLMUsageRepository)) -> None:
+    def __init__(self , error_repo = Depends(ErrorRepo), llm_usage_repo = Depends(LLMUsageRepository)) -> None:
         self.error_repo = error_repo   
         self.total_input_tokens = 0
         self.total_outpt_tokens = 0
@@ -70,7 +70,7 @@ class CrawlerUtils:
     
     
     
-    def clean_gpt_output(self, response_text):
+    async def clean_gpt_output(self, response_text, user_id):
         """Cleans GPT output by removing code block markers and ensuring a valid list format."""
         response_text = (
             re.sub(r"```[a-zA-Z]*", "", response_text).strip("`").strip()
@@ -79,7 +79,8 @@ class CrawlerUtils:
             response_text =  FilterPromptResponse(urls=eval(response_text))
             url_list: List[str] = [str(url) for url in response_text.urls]
             return url_list
-        except:
+        except Exception as e:
+            await self.error_repo.insert_error(Error(user_id= user_id, error_message = f"[ERROR] Failed to clean GPT output for {response_text} and the user id is : {user_id}" ))
             return []
         
     def merge_content(self,markdown_content, hidden_snippets):

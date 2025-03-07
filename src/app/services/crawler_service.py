@@ -93,7 +93,7 @@ class CrawlerService:
             )
 
             filtered_links = response.choices[0].message.content.strip()
-            return self.crawler_utils.clean_gpt_output(filtered_links)
+            return await self.crawler_utils.clean_gpt_output(filtered_links, self.user_id)
 
         except Exception as e:
             await self.error_repo.insert_error(Error(user_id= self.user_id, error_message= f"[ERROR] LLM call failed: {e}"))
@@ -453,3 +453,5 @@ class CrawlerService:
                 print(
                     f"{file_name}: {count}/{self.max_llm_request_count} LLM calls, {len(self.results.get(file_name, []))} pages crawled"
                 )
+                
+            return self.user_id
