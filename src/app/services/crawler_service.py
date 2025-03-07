@@ -21,7 +21,7 @@ from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 from src.app.utils.crawler_utils import CrawlerUtils
 from src.app.utils.prompts import filter_prompt
 from src.app.config.clients import Clients
-
+from src.app.config.crawler_config import browser_conf, crawler_cfg
 class CrawlerService:
     def __init__(self, error_repo = Depends(ErrorRepo), crawler_utils = Depends(CrawlerUtils), openai_client = Depends(Clients.get_openai_client)) -> None:
         self.total_input_tokens = 0
@@ -116,30 +116,7 @@ class CrawlerService:
         print(f"[CRAWL] Processing {url} at depth {depth}")
 
         try:
-            prune_filter = PruningContentFilter(
-                threshold_type="dynamic",
-            )
-            md_generator = DefaultMarkdownGenerator(
-                content_filter=prune_filter,
-                options={
-                    "ignore_links": True,
-                    "escape_html": True,
-                    "ignore_images": True,
-                    "skip_internal_links": True,
-                },
-            )
-            crawler_cfg = CrawlerRunConfig(
-                exclude_external_links=True,
-                exclude_social_media_links=True,
-                exclude_external_images=True,
-                verbose=False,
-                cache_mode=CacheMode.DISABLED,
-                markdown_generator=md_generator,
-            )
-            browser_conf = BrowserConfig(
-                text_mode=True, light_mode=True, verbose=False
-            )
-
+            
             async with AsyncWebCrawler(config=browser_conf) as crawler:
                 result = await crawler.arun(url=url, config=crawler_cfg)
         except Exception as e:
@@ -153,13 +130,6 @@ class CrawlerService:
         # Store the result
         if file_name not in self.results:
             self.results[file_name] = []
-        # hidden_snippets = await extract_hidden_snippets(url)
-        # merged_content = merge_content(result.fit_markdown, hidden_snippets)
-        # results[file_name].append({"href": url, "content": merged_content})
-
-        #hidden_snippets = await extract_hidden_snippets(url=url, browser=browser)
-        #md_content = result.fit_markdown
-        #final_md_content = merge_content(md_content, hidden_snippets)
         self.results[file_name].append({"href": url, "content": result.fit_markdown})
 
         # Only continue if we haven't reached the LLM limit
