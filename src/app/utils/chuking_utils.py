@@ -104,13 +104,13 @@ class ChunkingUtils:
             await self.llm_usage_repo.save_usage(log_data)
 
             output_text = response.choices[0].message.content.strip()
-            chunks = await self.extract_json_list(user_id,output_text)
+            chunks = await self.extract_json_list(user_id, output_text)
 
             if chunks:
                 try:
                     for chunk in chunks:
-                        ChunkedData(**chunk)  
-                    return chunks  
+                        ChunkedData(**chunk)
+                    return chunks
                 except Exception as e:
                     error = Error(user_id=user_id, error_message=str(e))
                     await self.error_repo.insert_error(error)
@@ -175,7 +175,7 @@ class ChunkingUtils:
         await self.llm_usage_repo.save_usage(log_data)
 
         output_text = response.choices[0].message.content.strip()
-        filtered_links = await self.extract_json_list(user_id,output_text)
+        filtered_links = await self.extract_json_list(user_id, output_text)
 
         if filtered_links:
             try:
@@ -231,7 +231,7 @@ class ChunkingUtils:
 
         await self.llm_usage_repo.save_usage(log_data)
         output_text = response.choices[0].message.content.strip()
-        chunks = await self.extract_json_list(user_id,output_text)
+        chunks = await self.extract_json_list(user_id, output_text)
         print("Summary Chunks: ", chunks)
         if chunks:
             try:

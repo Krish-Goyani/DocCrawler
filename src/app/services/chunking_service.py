@@ -74,7 +74,7 @@ class ChunkingService:
 
     async def start_chunking_service(self, user_id):
 
-        dir_path = os.path.join(settings.USER_DATA,user_id, "results")
+        dir_path = os.path.join(settings.USER_DATA, user_id, "results")
 
         json_files = [
             os.path.join(dir_path, file)
