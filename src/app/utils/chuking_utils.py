@@ -9,7 +9,6 @@ from src.app.repositories.llm_usage_repository import LLMUsageRepository
 from src.app.utils.error_handler import JsonResponseError
 from src.app.repositories.error_repository import ErrorRepo
 from fastapi import Depends
-from src.app.models.domain.log_data import LogData
 from src.app.models.schemas.llm_response import ChunkMetadata, ChunkedData, SummaryLinksResponse, SummaryMetadata, SummaryData
 from src.app.models.domain.error import Error
 

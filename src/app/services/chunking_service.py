@@ -84,3 +84,4 @@ class ChunkingService:
         chunk_file = os.path.join(dir_path, "all_chunks.json")
         async with aiofiles.open(chunk_file, mode="w") as chunk_f:
             await chunk_f.write(json.dumps(all_chunks, indent=2))
+        return user_id
