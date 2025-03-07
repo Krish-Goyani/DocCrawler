@@ -165,6 +165,7 @@ class CrawlerUtils:
                 total_input_tokens=self.total_input_tokens,
                 total_output_tokens=self.total_output_tokens,
                 time_taken=end_time - start_time,
+                request_type= "url filtering"
             )
             
             await self.llm_usage_repo.save_usage(log_data)

@@ -8,6 +8,7 @@ class LogData:
         total_input_tokens: int,
         total_output_tokens: int,
         time_taken: float,
+        request_type : str
     ):
         self.timestamp: float = timestamp
         self.request_count: int = request_count
@@ -16,6 +17,7 @@ class LogData:
         self.total_input_tokens: int = total_input_tokens
         self.total_output_tokens: int = total_output_tokens
         self.time_taken: float = time_taken
+        self.request_type: str = request_type
 
     def to_dict(self):
         return {
@@ -26,4 +28,5 @@ class LogData:
             "total_input_tokens": self.total_input_tokens,
             "total_output_tokens": self.total_output_tokens,
             "time_taken": self.time_taken,
+            "request_type": self.request_type
         }
