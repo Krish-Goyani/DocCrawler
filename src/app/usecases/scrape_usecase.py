@@ -10,7 +10,7 @@ class ScrapeUseCase:
     def __init__(
         self,
         crawler_service=Depends(CrawlerService),
-        chunking_service: ChunkingService = Depends(ChunkingService),
+        chunking_service= Depends(ChunkingService),
     ) -> None:
         self.chunking_service = chunking_service
         self.crawler_service = crawler_service

@@ -19,7 +19,7 @@ class CrawlerService:
         self,
         error_repo=Depends(ErrorRepo),
         crawler_utils=Depends(CrawlerUtils),
-        openai_client=Depends(Clients.get_openai_client),
+        openai_client=Depends(Clients),
     ) -> None:
         self.total_input_tokens = 0
         self.total_output_tokens = 0
@@ -35,7 +35,7 @@ class CrawlerService:
         self.user_id = None
         self.max_llm_request_count = settings.MAX_LLM_REQUEST_COUNT
         self.crawler_utils = crawler_utils
-        self.openai_client = openai_client
+        self.openai_client = openai_client.get_openai_client()
         self.mini_queue = asyncio.Queue()
         self.SELECTOR_HIERARCHY = SELECTOR_HIERARCHY
         self.PROGRAMMING_LANGUAGES = PROGRAMMING_LANGUAGES

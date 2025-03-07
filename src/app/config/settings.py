@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     MAX_CONCURRENT_CLICKS: int
     LLM_USAGE_COLLECTION_NAME: str
     USER_DATA: str
+    CHUNK_SEMAPHORE : int
 
     class Config:
         env_file = "src/.env"
