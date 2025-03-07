@@ -27,5 +27,5 @@ class ScrapeUseCase:
         await self.embed_service.process_files(
             user_id=user_id, max_concurrent_tasks=40
         )
-        await self.upsert_service.upload_vectors(user_id=user_id)
-        return True
+        result = await self.upsert_service.upload_vectors(user_id=user_id)
+        return result
