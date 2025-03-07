@@ -3,14 +3,14 @@ import shutil
 
 from fastapi import Depends
 
-from ..config.clients import Clients
-
 # from pinecone.grpc import PineconeGRPC as Pinecone
-from ..config.settings import settings
-from ..models.domain.error import Error
-from ..repositories.error_repository import ErrorRepo
-from ..utils.error_handler import JsonResponseError
-from ..utils.upsert_utils import PineconeUtils
+from src.app.config.settings import settings
+from src.app.models.domain.error import Error
+from src.app.repositories.error_repository import ErrorRepo
+from src.app.utils.error_handler import JsonResponseError
+from src.app.utils.upsert_utils import PineconeUtils
+
+from src.app.config.clients import Clients
 
 
 class UpsertService:
@@ -28,7 +28,11 @@ class UpsertService:
     async def upload_vectors(self, user_id: str):
 
         # all_chunks.json path
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        base_dir = os.path.dirname(
+            os.path.dirname(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            )
+        )
         embeddings_folder = os.path.join(base_dir, settings.USER_DATA, user_id)
 
         if not os.path.exists(embeddings_folder):

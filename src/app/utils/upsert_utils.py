@@ -8,9 +8,9 @@ from typing import Any, Dict, List
 from fastapi import Depends
 from pinecone import ServerlessSpec
 
-from ..models.domain.error import Error
-from ..repositories.error_repository import ErrorRepo
-from ..utils.error_handler import JsonResponseError
+from src.app.models.domain.error import Error
+from src.app.repositories.error_repository import ErrorRepo
+from src.app.utils.error_handler import JsonResponseError
 
 
 class PineconeUtils:

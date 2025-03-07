@@ -104,9 +104,7 @@ class DocumentCrawlerApp:
 
                     # Display final result
                     st.success(f"Successfully processed {len(urls)} URLs")
-                    st.json(
-                        {"vector_count": len(urls) * 10, "message": "success"}
-                    )
+                    st.json(response)
 
             except Exception as e:
                 st.error(f"An error occurred: {str(e)}")
