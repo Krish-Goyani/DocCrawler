@@ -28,6 +28,7 @@ from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 import aiofiles
 from src.app.models.domain.log_data import LogData
 from src.app.repositories.llm_usage_repository import LLMUsageRepository
+from src.app.models.schemas.llm_response import FilterPromptResponse
 
 class CrawlerUtils:
     def __init__(self,user_id, error_repo = Depends(ErrorRepo), llm_usage_repo = Depends(LLMUsageRepository)) -> None:
@@ -75,7 +76,9 @@ class CrawlerUtils:
             re.sub(r"```[a-zA-Z]*", "", response_text).strip("`").strip()
         )
         try:
-            return eval(response_text)
+            response_text =  FilterPromptResponse(urls=eval(response_text))
+            url_list: List[str] = [str(url) for url in response_text.urls]
+            return url_list
         except:
             return []
         
