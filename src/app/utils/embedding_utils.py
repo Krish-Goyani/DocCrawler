@@ -1,25 +1,23 @@
 import types
 from typing import Dict, List, Optional
-from fastembed import TextEmbedding
+
 from fastapi import Depends
+from fastembed import TextEmbedding
 from pinecone_text.sparse import BM25Encoder
-from src.app.repositories.error_repository import ErrorRepo
+
 from src.app.models.domain.error import Error
+from src.app.repositories.error_repository import ErrorRepo
+
 
 class EmbeddingUtils:
-    def __init__(
-        self,
-        error_repo: ErrorRepo = Depends(ErrorRepo)
-    ) -> None:
+    def __init__(self, error_repo: ErrorRepo = Depends(ErrorRepo)) -> None:
         self.error_repo = error_repo
         self.model = TextEmbedding("BAAI/bge-base-en-v1.5")
         self.bm25 = BM25Encoder().default()
         self.request_count = 0
 
     def get_sparse_embedding(
-        self, 
-        text: str, 
-        user_id: str  # Add user_id as a parameter
+        self, text: str, user_id: str  # Add user_id as a parameter
     ) -> Dict[str, List[int]]:
         """
         Generate sparse embeddings using BM25 encoding.
@@ -42,15 +40,13 @@ class EmbeddingUtils:
             self.error_repo.insert_error(
                 Error(
                     user_id=user_id,  # Use user_id in error logging
-                    error_message=f"[ERROR] Failed to generate sparse embedding: {e}"
+                    error_message=f"[ERROR] Failed to generate sparse embedding: {e}",
                 )
             )
-            return {"indices": [], "values": []} 
+            return {"indices": [], "values": []}
 
     def get_embedding(
-        self, 
-        text: str, 
-        user_id: str  # Add user_id as a parameter
+        self, text: str, user_id: str  # Add user_id as a parameter
     ) -> Optional[List[float]]:
         """
         Generate dense embeddings using the fastembed model.
@@ -77,7 +73,9 @@ class EmbeddingUtils:
             if hasattr(raw, "tolist"):
                 embeddings = raw.tolist()
             elif isinstance(raw, list):
-                embeddings = [e.tolist() if hasattr(e, "tolist") else e for e in raw]
+                embeddings = [
+                    e.tolist() if hasattr(e, "tolist") else e for e in raw
+                ]
             else:
                 embeddings = raw
 
@@ -87,7 +85,7 @@ class EmbeddingUtils:
             self.error_repo.insert_error(
                 Error(
                     user_id=user_id,  # Use user_id in error logging
-                    error_message=f"[ERROR] Failed to generate dense embedding: {e}"
+                    error_message=f"[ERROR] Failed to generate dense embedding: {e}",
                 )
             )
-            return None  
+            return None

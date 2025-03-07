@@ -11,7 +11,7 @@ class ScrapeUseCase:
     def __init__(
         self,
         crawler_service=Depends(CrawlerService),
-        chunking_service= Depends(ChunkingService),
+        chunking_service=Depends(ChunkingService),
         embed_service=Depends(EmbedService),
     ) -> None:
         self.chunking_service = chunking_service
@@ -23,8 +23,5 @@ class ScrapeUseCase:
         chunk_path = await self.chunking_service.start_chunking_service(
             dir_path
         )
-        await self.embed_service.main(
-            user_id=user_id,
-            max_concurrent_tasks=40
-        )
+        await self.embed_service.main(user_id=user_id, max_concurrent_tasks=40)
         return True

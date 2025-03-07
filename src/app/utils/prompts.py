@@ -229,4 +229,3 @@ CONTEXT: <retrieved context>
 Return only the score as a single digit (1, 2, 3, 4, or 5) with no additional explanation or text.
 
 """
-

@@ -1,58 +1,59 @@
-from fastapi import Depends
-from typing import List, Dict, Any
 import asyncio
 import concurrent.futures
 import json
 import os
+from typing import List
+
+from fastapi import Depends
+
+from src.app.config.settings import settings
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
 from src.app.utils.embedding_utils import EmbeddingUtils
-from src.app.config.settings import settings  
+from src.app.utils.error_handler import JsonResponseError
+
 
 class EmbedService:
     def __init__(
-        self, 
+        self,
         error_repo: ErrorRepo = Depends(ErrorRepo),
-        embedding_utils: EmbeddingUtils = Depends(EmbeddingUtils)
+        embedding_utils: EmbeddingUtils = Depends(EmbeddingUtils),
     ) -> None:
         self.error_repo = error_repo
         self.embedding_utils = embedding_utils
-        self.total_chunks = 0  
+        self.total_chunks = 0
         self.embedded_count = 0
 
     async def get_embedding_concurrently(
-        self, 
-        text: str, 
-        pool: concurrent.futures.ThreadPoolExecutor, 
+        self,
+        text: str,
+        pool: concurrent.futures.ThreadPoolExecutor,
         semaphore: asyncio.Semaphore,
-        user_id: str 
+        user_id: str,
     ) -> List[float]:
         """Get embeddings for a given text concurrently."""
         try:
             async with semaphore:
                 loop = asyncio.get_event_loop()
                 result = await loop.run_in_executor(
-                    pool, 
-                    self.embedding_utils.get_embedding, 
-                    text, 
-                    user_id 
+                    pool, self.embedding_utils.get_embedding, text, user_id
                 )
                 return result
         except Exception as e:
             await self.error_repo.insert_error(
                 Error(
-                    user_id=user_id, 
-                    error_message=f"[ERROR] Failed to get embedding for text: {e}"
+                    user_id=user_id,
+                    error_message=f"[ERROR] Failed to get embedding for text: {e}",
                 )
             )
-            raise  
+            return None
 
     async def embed_process_file(
-        self, 
-        source_file: str, 
-        pool: concurrent.futures.ThreadPoolExecutor, 
+        self,
+        source_file: str,
+        pool: concurrent.futures.ThreadPoolExecutor,
         semaphore: asyncio.Semaphore,
-        user_id: str 
+        user_id: str,
     ) -> None:
         """Process a file to generate embeddings and save them."""
         try:
@@ -69,10 +70,7 @@ class EmbedService:
                 tasks.append(
                     asyncio.create_task(
                         self.get_embedding_concurrently(
-                            chunk_text, 
-                            pool, 
-                            semaphore,
-                            user_id 
+                            chunk_text, pool, semaphore, user_id
                         )
                     )
                 )
@@ -81,9 +79,10 @@ class EmbedService:
 
             for item, embedding in zip(data, embeddings):
                 item["embedding"] = embedding
-                item["sparse_values"] = self.embedding_utils.get_sparse_embedding(
-                    item["chunked_data"],
-                    user_id 
+                item["sparse_values"] = (
+                    self.embedding_utils.get_sparse_embedding(
+                        item["chunked_data"], user_id
+                    )
                 )
                 self.embedded_count += 1
                 print(
@@ -92,17 +91,14 @@ class EmbedService:
 
             # Save embeddings to user-specific embeddings directory
             embeddings_dir = os.path.join(
-                settings.USER_DATA, 
-                user_id, 
-                "embeddings"
+                settings.USER_DATA, user_id, "embeddings"
             )
             os.makedirs(embeddings_dir, exist_ok=True)
-            
+
             output_file = os.path.join(
-                embeddings_dir, 
-                os.path.basename(source_file)
+                embeddings_dir, os.path.basename(source_file)
             )
-            
+
             with open(output_file, "w", encoding="utf-8") as file:
                 json.dump(data, file, indent=4)
 
@@ -110,16 +106,13 @@ class EmbedService:
         except Exception as e:
             await self.error_repo.insert_error(
                 Error(
-                    user_id=user_id, 
-                    error_message=f"[ERROR] Failed to process file {source_file}: {e}"
+                    user_id=user_id,
+                    error_message=f"[ERROR] Failed to process file {source_file}: {e}",
                 )
             )
-            raise 
 
     async def process_files(
-        self, 
-        user_id: str, 
-        max_concurrent_tasks: int = 40
+        self, user_id: str, max_concurrent_tasks: int = 40
     ) -> None:
         """
         Process the all_chunks.json file for a user to generate embeddings.
@@ -131,13 +124,14 @@ class EmbedService:
         try:
             # Get the path to the all_chunks.json file for this user
             chunk_file = os.path.join(
-                settings.USER_DATA, 
-                user_id, 
-                "all_chunks.json"
+                settings.USER_DATA, user_id, "all_chunks.json"
             )
-            
+
             if not os.path.exists(chunk_file):
-                raise FileNotFoundError(f"No chunked data found for user {user_id}")
+                raise JsonResponseError(
+                    status_code=404,
+                    detail=f"No chunked data found for user {user_id}",
+                )
 
             # Process the file to generate embeddings
             semaphore = asyncio.Semaphore(max_concurrent_tasks)
@@ -146,15 +140,14 @@ class EmbedService:
                     source_file=chunk_file,
                     pool=pool,
                     semaphore=semaphore,
-                    user_id=user_id
+                    user_id=user_id,
                 )
 
             print(f"Embedding process completed for user {user_id}")
         except Exception as e:
             await self.error_repo.insert_error(
                 Error(
-                    user_id=user_id, 
-                    error_message=f"[ERROR] Failed to process files for user {user_id}: {e}"
+                    user_id=user_id,
+                    error_message=f"[ERROR] Failed to process files for user {user_id}: {e}",
                 )
             )
-            raise 
