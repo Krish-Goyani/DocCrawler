@@ -10,7 +10,8 @@ from src.app.utils.error_handler import JsonResponseError
 from src.app.repositories.error_repository import ErrorRepo
 from fastapi import Depends
 from src.app.models.domain.log_data import LogData
-
+from src.app.models.schemas.llm_response import ChunkMetadata, ChunkedData, SummaryLinksResponse, SummaryMetadata, SummaryData
+from src.app.models.domain.error import Error
 
 
 class ChunkingUtils:
@@ -22,25 +23,41 @@ class ChunkingUtils:
         self.chunk_total_output_tokens = 0
         self.request_type = "chunking"
 
-    def extract_hrefs(self,json_data):
-        hrefs = []
-        for entry in json_data:
-            href = entry.get("href", "")
-            hrefs.append(href)
-        return hrefs
+    async def extract_hrefs(self, user_id, json_data):
+        try:
+            hrefs = []
+            for entry in json_data:
+                href = entry.get("href", "")
+                hrefs.append(href)
+            return hrefs
+        except Exception as e:
+            error = Error(
+                user_id=user_id,
+                error_message=str(e)
+            )
+            await self.error_repo.insert_error(error)
+            return None
 
 
-    def fetch_content(self,json_data, hrefs):
-        content_dict = {}
-        for entry in json_data:
-            href = entry.get("href", "")
-            if href in hrefs:
-                content = entry.get("content", "")
-                content_dict[href] = content
-        return content_dict
+    async def fetch_content(self, user_id, json_data, hrefs):
+        try:
+            content_dict = {}
+            for entry in json_data:
+                href = entry.get("href", "")
+                if href in hrefs:
+                    content = entry.get("content", "")
+                    content_dict[href] = content
+            return content_dict
+        except Exception as e:
+            error = Error(
+                user_id=user_id,
+                error_message=str(e)
+            )
+            await self.error_repo.insert_error(error)
+            return None
 
 
-    async def chunk_with_gpt(self, text, chunk_semaphore):
+    async def chunk_with_gpt(self, user_id, text, chunk_semaphore):
 
         async with chunk_semaphore:
             try:
@@ -59,7 +76,11 @@ class ChunkingUtils:
                     return None
                 end_time = time.time()
             except openai.OpenAIError as e:
-                print(f"OpenAI API Error: {e}")
+                error = Error(
+                    user_id=user_id,
+                    error_message=str(e)
+                )
+                await self.error_repo.insert_error(error)
                 return None
 
             self.chunk_llm_request_count += 1
@@ -71,47 +92,53 @@ class ChunkingUtils:
             output_tokens = usage.completion_tokens
             self.chunk_total_input_tokens += input_tokens
             self.chunk_total_output_tokens += output_tokens
+ 
+            log_data = LogData(
+                timestamp = time.time(),
+                request_count = self.chunk_llm_request_count,
+                input_tokens = input_tokens,
+                output_tokens = output_tokens,
+                total_input_tokens = self.chunk_total_input_tokens,
+                total_output_tokens = self.chunk_total_output_tokens,
+                time_taken = end_time - start_time,
+                request_type = self.request_type
+            )
 
-            {
-            "timestamp": self.timestamp,
-            "request_count": self.request_count,
-            "input_tokens": self.input_tokens,
-            "output_tokens": self.output_tokens,
-            "total_input_tokens": self.total_input_tokens,
-            "total_output_tokens": self.total_output_tokens,
-            "time_taken": self.time_taken,
-            "request_type": self.request_type,
-        }   
-            # Prepare and write log data.
-            log_data = {
-                "llm_request_count": chunk_llm_request_count,
-                "total_input_tokens": chunk_total_input_tokens,
-                "total_output_tokens": chunk_total_output_tokens,
-                "start_time": start_time,
-                "end_time": end_time,
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "time_taken": end_time - start_time,
-            }
+            await self.llm_usage_repo.save_usage(log_data)
 
             output_text = response.choices[0].message.content.strip()
             chunks = self.extract_json_list(output_text)
 
-            return chunks
+            if chunks:
+                try:
+                    validated_chunks = [ChunkedData(**chunk) for chunk in chunks]
+                    return validated_chunks
+                except Exception as e:
+                    error = Error(
+                        user_id=user_id,
+                        error_message=str(e)
+                    )
+                    await self.error_repo.insert_error(error)
+                    return None
+            return None
 
 
-    def extract_json_list(self,text):
-        # Regex to extract the JSON list from the response text.
+    async def extract_json_list(self, user_id, text):
         match = re.search(r"```json\s*(\[.*?\])\s*```", text, re.DOTALL)
         if match:
             try:
-                return json.loads(match.group(1))  # Convert string to a Python list
-            except json.JSONDecodeError:
-                return None  # Handle invalid JSON cases
+                return json.loads(match.group(1))
+            except json.JSONDecodeError as e:
+                error = Error(
+                    user_id=user_id,
+                    error_message=f"JSONDecodeError: {str(e)}"
+                )
+                await self.error_repo.insert_error(error)
+                return None  
         return None
 
 
-    async def filter_summary_links(self,text):
+    async def filter_summary_links(self, user_id, text):
         try:
             start_time = time.time()
             try:
@@ -128,7 +155,11 @@ class ChunkingUtils:
                 return None
             end_time = time.time()
         except openai.OpenAIError as e:
-            print(f"OpenAI API Error: {e}")
+            error = Error(
+                user_id=user_id,
+                error_message=str(e)
+            )
+            await self.error_repo.insert_error(error)
             return None
 
         self.chunk_llm_request_count += 1
@@ -141,17 +172,6 @@ class ChunkingUtils:
         self.chunk_total_input_tokens += input_tokens
         self.chunk_total_output_tokens += output_tokens
 
-        # Prepare and write log data.
-        # log_data = {
-        #     "llm_request_count": chunk_llm_request_count,
-        #     "total_input_tokens": chunk_total_input_tokens,
-        #     "total_output_tokens": chunk_total_output_tokens,
-        #     "start_time": start_time,
-        #     "end_time": end_time,
-        #     "input_tokens": input_tokens,
-        #     "output_tokens": output_tokens,
-        #     "time_taken": end_time - start_time,
-        # }
         log_data = LogData(
             timestamp = time.time(),
             request_count = self.chunk_llm_request_count,
@@ -165,15 +185,24 @@ class ChunkingUtils:
 
         await self.llm_usage_repo.save_usage(log_data)
 
-
         output_text = response.choices[0].message.content.strip()
         filtered_links = self.extract_json_list(output_text)
 
-        return filtered_links
+        if filtered_links:
+            try:
+                validated_links = SummaryLinksResponse(urls=filtered_links)
+                return validated_links
+            except Exception as e:
+                error = Error(
+                    user_id=user_id,
+                    error_message=str(e)
+                )
+                await self.error_repo.insert_error(error)
+                return None
+        return None
 
 
-    async def generate_summary_chunk(self,text):
-        global chunk_llm_request_count, chunk_total_input_tokens, chunk_total_output_tokens
+    async def generate_summary_chunk(self, user_id, text):
         try:
             start_time = time.time()
             try:
@@ -190,30 +219,22 @@ class ChunkingUtils:
                 return None
             end_time = time.time()
         except openai.OpenAIError as e:
-            print(f"OpenAI API Error: {e}")
+            error = Error(
+                user_id=user_id,
+                error_message=str(e)
+            )
+            await self.error_repo.insert_error(error)
             return None
 
-        chunk_llm_request_count += 1
+        self.chunk_llm_request_count += 1
         usage = getattr(response, "usage", None)
         if not usage:
             return None
 
         input_tokens = usage.prompt_tokens
         output_tokens = usage.completion_tokens
-        chunk_total_input_tokens += input_tokens
-        chunk_total_output_tokens += output_tokens
-
-        # Prepare and write log data.
-        # log_data = {
-        #     "llm_request_count": chunk_llm_request_count,
-        #     "total_input_tokens": chunk_total_input_tokens,
-        #     "total_output_tokens": chunk_total_output_tokens,
-        #     "start_time": start_time,
-        #     "end_time": end_time,
-        #     "input_tokens": input_tokens,
-        #     "output_tokens": output_tokens,
-        #     "time_taken": end_time - start_time,
-        # }
+        self.chunk_total_input_tokens += input_tokens
+        self.chunk_total_output_tokens += output_tokens
 
         log_data = LogData(
             timestamp = time.time(),
@@ -230,4 +251,15 @@ class ChunkingUtils:
         output_text = response.choices[0].message.content.strip()
         chunks = self.extract_json_list(output_text)
 
-        return chunks
+        if chunks:
+            try:
+                validated_chunks = [SummaryData(**chunk) for chunk in chunks]
+                return validated_chunks
+            except Exception as e:
+                error = Error(
+                    user_id=user_id,
+                    error_message=str(e)
+                )
+                await self.error_repo.insert_error(error)
+                return None
+        return None

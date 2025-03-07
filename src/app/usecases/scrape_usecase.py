@@ -10,5 +10,5 @@ class ScrapeUseCase:
 
     async def crawler_usecase(self, user_id: str, urls : list):
         
-        chunk_path = await self.chunking_service.start_chunking_service(dir_path)
+        chunk_path = await self.chunking_service.start_chunking_service(user_id)
         return 
