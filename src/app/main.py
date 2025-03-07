@@ -16,4 +16,4 @@ async def db_lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=db_lifespan)
-app.include_router(router= scrape_router)
+app.include_router(router=scrape_router)
