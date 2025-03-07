@@ -104,14 +104,13 @@ class ChunkingUtils:
             await self.llm_usage_repo.save_usage(log_data)
 
             output_text = response.choices[0].message.content.strip()
-            chunks = self.extract_json_list(output_text)
+            chunks = await self.extract_json_list(user_id,output_text)
 
             if chunks:
                 try:
-                    validated_chunks = [
-                        ChunkedData(**chunk) for chunk in chunks
-                    ]
-                    return validated_chunks
+                    for chunk in chunks:
+                        ChunkedData(**chunk)  
+                    return chunks  
                 except Exception as e:
                     error = Error(user_id=user_id, error_message=str(e))
                     await self.error_repo.insert_error(error)
@@ -176,12 +175,12 @@ class ChunkingUtils:
         await self.llm_usage_repo.save_usage(log_data)
 
         output_text = response.choices[0].message.content.strip()
-        filtered_links = self.extract_json_list(output_text)
+        filtered_links = await self.extract_json_list(user_id,output_text)
 
         if filtered_links:
             try:
-                validated_links = SummaryLinksResponse(urls=filtered_links)
-                return validated_links
+                SummaryLinksResponse(urls=filtered_links)
+                return filtered_links
             except Exception as e:
                 error = Error(user_id=user_id, error_message=str(e))
                 await self.error_repo.insert_error(error)
@@ -232,12 +231,13 @@ class ChunkingUtils:
 
         await self.llm_usage_repo.save_usage(log_data)
         output_text = response.choices[0].message.content.strip()
-        chunks = self.extract_json_list(output_text)
-
+        chunks = await self.extract_json_list(user_id,output_text)
+        print("Summary Chunks: ", chunks)
         if chunks:
             try:
-                validated_chunks = [SummaryData(**chunk) for chunk in chunks]
-                return validated_chunks
+                for chunk in chunks:
+                    SummaryData(**chunk)
+                return chunks
             except Exception as e:
                 error = Error(user_id=user_id, error_message=str(e))
                 await self.error_repo.insert_error(error)

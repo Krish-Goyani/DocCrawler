@@ -55,14 +55,14 @@ class ChunkingService:
         async with aiofiles.open(file_path, "r") as file:
             data = json.loads(await file.read())
 
-        links = self.chunk_utils.extract_hrefs(user_id, data)
+        links = await self.chunk_utils.extract_hrefs(user_id, data)
         if len(links) > 180:
             links = links[:180]
         filtered_links = await self.chunk_utils.filter_summary_links(
             user_id, f"{summary_links_prompt}\n**INPUT:**\n{links}\n**OUTPUT:**"
         )
 
-        content_data = self.chunk_utils.fetch_content(
+        content_data = await self.chunk_utils.fetch_content(
             user_id, data, filtered_links
         )
         responses = await self.chunk_utils.generate_summary_chunk(

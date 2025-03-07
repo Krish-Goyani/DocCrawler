@@ -75,7 +75,7 @@ json
   {
     "chunked_data": "Extracted meaningful text chunk...",
     "metadata": {
-      "SDK/Framework_name": "Gemini API",
+      "SDK_Framework_name": "Gemini API",
       "base_url": "https://ai.google.dev/gemini-api/docs",
       "source_url": "https://ai.google.dev/gemini-api/gemini-quickstart",
       "sdk_framework": "SDK",
@@ -87,7 +87,7 @@ json
   {
     "chunked_data": "Another meaningful text chunk...",
     "metadata": {
-      "SDK/Framework_name": "Gemini API",
+      "SDK_Framework_name": "Gemini API",
       "base_url": "https://ai.google.dev/gemini-api/docs",
       "source_url": "https://ai.google.dev/gemini-api/docs",
       "sdk_framework": "SDK",
@@ -139,7 +139,7 @@ The Selected links should be capable to provide enough information to generate f
 	"supported_languages": [],
 	"versions": []
 }
-- "SDK/Framework_name": The **name** of the SDK or framework being described.
+- "SDK_Framework_name": The **name** of the SDK or framework being described.
 - "source_url": The **original URL** from which the content was scraped (provided as input).
 - "sdk_framework": Binary classification:
     - **SDK** → If the document primarily discusses an SDK (e.g., Python SDK, Node.js SDK).
