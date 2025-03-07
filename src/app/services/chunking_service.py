@@ -3,7 +3,7 @@ import json
 import os
 
 import aiofiles
-from config.settings import settings
+from src.app.config.settings import settings
 from fastapi import Depends
 
 from src.app.utils.chuking_utils import ChunkingUtils

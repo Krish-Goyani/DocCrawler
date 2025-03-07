@@ -6,7 +6,7 @@ from fastapi import Depends
 from playwright.async_api import async_playwright
 
 from src.app.config.clients import Clients
-from src.app.config.crawler_config import browser_conf, crawler_cfg
+from src.app.config.crawler_config import browser_conf, crawler_cfg, PROGRAMMING_LANGUAGES, SELECTOR_HIERARCHY
 from src.app.config.settings import settings
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
@@ -37,8 +37,8 @@ class CrawlerService:
         self.crawler_utils = crawler_utils
         self.openai_client = openai_client
         self.mini_queue = asyncio.Queue()
-        self.SELECTOR_HIERARCHY = settings.SELECTOR_HIERARCHY
-        self.PROGRAMMING_LANGUAGES = settings.PROGRAMMING_LANGUAGES
+        self.SELECTOR_HIERARCHY = SELECTOR_HIERARCHY
+        self.PROGRAMMING_LANGUAGES = PROGRAMMING_LANGUAGES
         self.MAX_CONCURRENT_CLICKS = settings.MAX_CONCURRENT_CLICKS
 
     async def should_process_url(self, file_name):

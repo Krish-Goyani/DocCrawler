@@ -20,4 +20,4 @@ class ScrapeUseCase:
         chunk_path = await self.chunking_service.start_chunking_service(
             dir_path
         )
-        return
+        return True
