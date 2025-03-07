@@ -1,29 +1,26 @@
+import asyncio
+import time
+
+from crawl4ai import AsyncWebCrawler
 from fastapi import Depends
-from typing import List
-import asyncio
-import json
-import os
-import re
-import time
-from urllib.parse import urlparse
-from src.app.models.domain.error import Error
-import aiofiles
-from crawl4ai import AsyncWebCrawler, BrowserConfig
-from src.app.utils.error_handler import JsonResponseError
-from src.app.repositories.error_repository import ErrorRepo
 from playwright.async_api import async_playwright
-import asyncio
-import time
-from src.app.config.settings import settings
-from crawl4ai import AsyncWebCrawler, BrowserConfig, CacheMode, CrawlerRunConfig
-from crawl4ai.content_filter_strategy import PruningContentFilter
-from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
-from src.app.utils.crawler_utils import CrawlerUtils
-from src.app.utils.prompts import filter_prompt
+
 from src.app.config.clients import Clients
 from src.app.config.crawler_config import browser_conf, crawler_cfg
+from src.app.config.settings import settings
+from src.app.models.domain.error import Error
+from src.app.repositories.error_repository import ErrorRepo
+from src.app.utils.crawler_utils import CrawlerUtils
+from src.app.utils.prompts import filter_prompt
+
+
 class CrawlerService:
-    def __init__(self, error_repo = Depends(ErrorRepo), crawler_utils = Depends(CrawlerUtils), openai_client = Depends(Clients.get_openai_client)) -> None:
+    def __init__(
+        self,
+        error_repo=Depends(ErrorRepo),
+        crawler_utils=Depends(CrawlerUtils),
+        openai_client=Depends(Clients.get_openai_client),
+    ) -> None:
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self.log_lock = asyncio.Lock()
@@ -44,25 +41,32 @@ class CrawlerService:
         self.PROGRAMMING_LANGUAGES = settings.PROGRAMMING_LANGUAGES
         self.MAX_CONCURRENT_CLICKS = settings.MAX_CONCURRENT_CLICKS
 
-
-    async def should_process_url(self,file_name):
+    async def should_process_url(self, file_name):
         """Check if we should process more URLs for this file_name"""
         async with self.count_locks.get(file_name, asyncio.Lock()):
-            return self.llm_request_counts.get(file_name, 0) < self.max_llm_request_count
-        
-    async def filter_links_gpt(self,links, file_name):
+            return (
+                self.llm_request_counts.get(file_name, 0)
+                < self.max_llm_request_count
+            )
+
+    async def filter_links_gpt(self, links, file_name):
         """Filter links using GPT-4o-mini asynchronously with minimal locking."""
-        
+
         # If no links to filter, return empty list without making an LLM call
         if not links:
             return []
 
         # Check if we've already hit the limit - only lock for this short check
         async with self.count_locks.get(file_name, asyncio.Lock()):
-            if self.llm_request_counts.get(file_name, 0) >= self.max_llm_request_count:
+            if (
+                self.llm_request_counts.get(file_name, 0)
+                >= self.max_llm_request_count
+            ):
                 return []
             # Increment preemptively to avoid race conditions
-            self.llm_request_counts[file_name] = self.llm_request_counts.get(file_name, 0) + 1
+            self.llm_request_counts[file_name] = (
+                self.llm_request_counts.get(file_name, 0) + 1
+            )
 
         input_text = f"{filter_prompt}\n**INPUT:**\n{links}\n**OUTPUT:**"
         start_time = time.time()
@@ -93,17 +97,24 @@ class CrawlerService:
             )
 
             filtered_links = response.choices[0].message.content.strip()
-            return await self.crawler_utils.clean_gpt_output(filtered_links, self.user_id)
+            return await self.crawler_utils.clean_gpt_output(
+                filtered_links, self.user_id
+            )
 
         except Exception as e:
-            await self.error_repo.insert_error(Error(user_id= self.user_id, error_message= f"[ERROR] LLM call failed: {e}"))
+            await self.error_repo.insert_error(
+                Error(
+                    user_id=self.user_id,
+                    error_message=f"[ERROR] LLM call failed: {e}",
+                )
+            )
             # Release the counter if the call failed
-            async with self. count_locks.get(file_name, asyncio.Lock()):
+            async with self.count_locks.get(file_name, asyncio.Lock()):
                 self.llm_request_counts[file_name] = max(
                     0, self.llm_request_counts.get(file_name, 0) - 1
                 )
             return []
-        
+
     async def crawl_page(self, url: str, depth: int, file_name, home_url):
         """
         Scrape a single URL using Crawl4AI, extract internal links, and process markdown.
@@ -116,29 +127,41 @@ class CrawlerService:
         print(f"[CRAWL] Processing {url} at depth {depth}")
 
         try:
-            
+
             async with AsyncWebCrawler(config=browser_conf) as crawler:
                 result = await crawler.arun(url=url, config=crawler_cfg)
         except Exception as e:
-            await self.error_repo.insert_error(Error(user_id= self.user_id, error_message= f"[ERROR] Failed to scrape {url}: {e}"))
+            await self.error_repo.insert_error(
+                Error(
+                    user_id=self.user_id,
+                    error_message=f"[ERROR] Failed to scrape {url}: {e}",
+                )
+            )
             return
 
         if not result.success:
-            await self.error_repo.insert_error(Error(user_id= self.user_id, error_message= f"[FAILED] Crawling unsuccessful for {url}"))
+            await self.error_repo.insert_error(
+                Error(
+                    user_id=self.user_id,
+                    error_message=f"[FAILED] Crawling unsuccessful for {url}",
+                )
+            )
             return
 
         # Store the result
         if file_name not in self.results:
             self.results[file_name] = []
-        self.results[file_name].append({"href": url, "content": result.fit_markdown})
+        self.results[file_name].append(
+            {"href": url, "content": result.fit_markdown}
+        )
 
         # Only continue if we haven't reached the LLM limit
         if not await self.should_process_url(file_name):
             return
-        
+
         if (depth + 1) >= self.max_depth:
-            return 
-        
+            return
+
         # Extract and filter internal links efficiently
         internal_links = list(
             set(
@@ -149,7 +172,9 @@ class CrawlerService:
             )
         )
         # Apply domain filter first to reduce the number of URLs sent to GPT
-        internal_links = self.crawler_utils.filter_urls_by_domain(url, internal_links)
+        internal_links = self.crawler_utils.filter_urls_by_domain(
+            url, internal_links
+        )
 
         # Batch processing: Split the internal_links into batches of 180
         batch_size = 180
@@ -172,10 +197,9 @@ class CrawlerService:
         # Add all new links to queue at once
         for link_info in new_links:
             await self.queue.put(link_info)
-        
-    
-    async def handle_element_and_extract(self,
-        page, element, text, seen_code_blocks, should_click=True
+
+    async def handle_element_and_extract(
+        self, page, element, text, seen_code_blocks, should_click=True
     ):
         """
         Handle an element (click if needed) and extract code snippets from the page.
@@ -210,10 +234,15 @@ class CrawlerService:
                     continue
             return snippets, text
         except Exception as e:
-            await self.error_repo.insert_error(Error(user_id= self.user_id, error_message= f"Skipping interactive element due to error: {e}"))
-            #print(f"Skipping interactive element due to error: {e}")
+            await self.error_repo.insert_error(
+                Error(
+                    user_id=self.user_id,
+                    error_message=f"Skipping interactive element due to error: {e}",
+                )
+            )
+            # print(f"Skipping interactive element due to error: {e}")
             return [], text
-        
+
     async def extract_hidden_snippets(self, url, browser):
         """Extracts hidden code snippets by clicking on tabs and handling non-interactive content."""
         code_snippets = {}  # Store extracted snippets by language
@@ -287,8 +316,13 @@ class CrawlerService:
                         code_snippets.setdefault(lang, []).extend(snippets)
 
             except Exception as e:
-                await self.error_repo.insert_error(Error(user_id= self.user_id, error_message= f"Error with selector {selector}: {e}"))
-                #print(f"Error with selector {selector}: {e}")
+                await self.error_repo.insert_error(
+                    Error(
+                        user_id=self.user_id,
+                        error_message=f"Error with selector {selector}: {e}",
+                    )
+                )
+                # print(f"Error with selector {selector}: {e}")
 
         # Step 2: Extract non-interactive hidden content
         hidden_elements = await page.query_selector_all(
@@ -306,8 +340,13 @@ class CrawlerService:
                 #
                 text = await element.inner_text()
             except Exception as e:
-                await self.error_repo.insert_error(Error(user_id= self.user_id, error_message= f"Skipping hidden element: {e}"))
-                #print(f"Skipping hidden element: {e}")
+                await self.error_repo.insert_error(
+                    Error(
+                        user_id=self.user_id,
+                        error_message=f"Skipping hidden element: {e}",
+                    )
+                )
+                # print(f"Skipping hidden element: {e}")
 
         # Step 3: Dynamically detect programming languages from code blocks
         languages = await page.evaluate(
@@ -327,8 +366,7 @@ class CrawlerService:
         await page.close()
         await context.close()
         return code_snippets
-    
-    
+
     async def worker_for_full_page(self, worker_id: int):
         """Worker coroutine that processes URLs from the queue concurrently."""
         while True:
@@ -340,34 +378,49 @@ class CrawlerService:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                await self.error_repo.insert_error(Error(user_id= self.user_id, error_message= f"[WORKER ERROR] Worker {worker_id}: {e}"))
-            
-                #print(f"[WORKER ERROR] Worker {worker_id}: {e}")
+                await self.error_repo.insert_error(
+                    Error(
+                        user_id=self.user_id,
+                        error_message=f"[WORKER ERROR] Worker {worker_id}: {e}",
+                    )
+                )
+
+                # print(f"[WORKER ERROR] Worker {worker_id}: {e}")
             finally:
                 self.queue.task_done()
-                
-                
+
     async def worker_for_code_snippets(self, browser):
         """Worker that processes items from the queue and updates the results."""
         while not self.mini_queue.empty():
             try:
                 file_name, url, md_content = await self.mini_queue.get()
                 # Call the async function to extract hidden snippets
-                hidden_snippets = await self.extract_hidden_snippets(url=url, browser=browser)
+                hidden_snippets = await self.extract_hidden_snippets(
+                    url=url, browser=browser
+                )
                 # Merge the original markdown content with the extracted snippets
-                final_md_content = self.crawler_utils.merge_content(md_content, hidden_snippets)
+                final_md_content = self.crawler_utils.merge_content(
+                    md_content, hidden_snippets
+                )
                 # updated content to the results for that file_name
-                [x for x in self.results[file_name] if x["href"] == url][0]["content"] = final_md_content
-                #self.results[file_name].append({"href": url, "content": final_md_content})
+                [x for x in self.results[file_name] if x["href"] == url][0][
+                    "content"
+                ] = final_md_content
+                # self.results[file_name].append({"href": url, "content": final_md_content})
             except asyncio.QueueEmpty:
                 break
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                await self.error_repo.insert_error(Error(user_id= self.user_id, error_message=f"[WORKER ERROR] In Code snippets Worker : {e}"))
+                await self.error_repo.insert_error(
+                    Error(
+                        user_id=self.user_id,
+                        error_message=f"[WORKER ERROR] In Code snippets Worker : {e}",
+                    )
+                )
             finally:
                 self.mini_queue.task_done()
-                
+
     async def code_snippets_crawler(self, num_workers, browser):
         """
         Distributes work among a pool of async workers.
@@ -379,7 +432,6 @@ class CrawlerService:
             browser: An instance of the playwright browser.
         """
 
-
         # Populate the queue with items from the results dictionary
         # Each item is a tuple: (file_name, url, md_content)
         for file_name, items in self.results.items():
@@ -389,8 +441,10 @@ class CrawlerService:
                 await self.mini_queue.put((file_name, url, md_content))
 
         # Start a pool of workers
-        tasks = [asyncio.create_task(self.worker_for_code_snippets(browser))
-                for _ in range(num_workers)]
+        tasks = [
+            asyncio.create_task(self.worker_for_code_snippets(browser))
+            for _ in range(num_workers)
+        ]
 
         # Wait until the queue is fully processed
         await self.mini_queue.join()
@@ -400,20 +454,21 @@ class CrawlerService:
             task.cancel()
 
         # Return the updated results if needed
-        return True       
-    
-    
-    
-    
-    async def main(self, start_urls: list[str], user_id : str ,num_workers: int = 60):
+        return True
+
+    async def main(
+        self, start_urls: list[str], user_id: str, num_workers: int = 60
+    ):
         self.user_id = user_id
-        file_name_tasks = [self.crawler_utils.get_file_name(url, self.user_id) for url in start_urls]
+        file_name_tasks = [
+            self.crawler_utils.get_file_name(url, self.user_id)
+            for url in start_urls
+        ]
         self.file_names = await asyncio.gather(*file_name_tasks)
-        
-        
+
         async with async_playwright() as playwright:
             browser = await playwright.chromium.launch(headless=True)
-            
+
             # Initialize tracking
             for i, url in enumerate(start_urls):
                 file_name = self.file_names[i]
@@ -428,7 +483,8 @@ class CrawlerService:
 
             # Create worker tasks
             tasks = [
-                asyncio.create_task(self.worker_for_full_page(i)) for i in range(num_workers)
+                asyncio.create_task(self.worker_for_full_page(i))
+                for i in range(num_workers)
             ]
 
             # Wait for all queue tasks to be processed
@@ -437,21 +493,20 @@ class CrawlerService:
             # Cancel all worker tasks
             for task in tasks:
                 task.cancel()
-                
+
             # comment below code to ignore the hidden code snippets.
-            await  self.code_snippets_crawler( num_workers= 25,  browser= browser)
+            await self.code_snippets_crawler(num_workers=25, browser=browser)
             # Save results
             await self.crawler_utils.save_results(self.results)
 
             # Wait for tasks to be cancelled
             await asyncio.gather(*tasks, return_exceptions=True)
             await browser.close()
-            
-            
+
             print("\n--- CRAWL SUMMARY ---")
             for file_name, count in self.llm_request_counts.items():
                 print(
                     f"{file_name}: {count}/{self.max_llm_request_count} LLM calls, {len(self.results.get(file_name, []))} pages crawled"
                 )
-                
+
             return self.user_id

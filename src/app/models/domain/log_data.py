@@ -8,7 +8,7 @@ class LogData:
         total_input_tokens: int,
         total_output_tokens: int,
         time_taken: float,
-        request_type : str
+        request_type: str,
     ):
         self.timestamp: float = timestamp
         self.request_count: int = request_count
@@ -28,5 +28,5 @@ class LogData:
             "total_input_tokens": self.total_input_tokens,
             "total_output_tokens": self.total_output_tokens,
             "time_taken": self.time_taken,
-            "request_type": self.request_type
+            "request_type": self.request_type,
         }

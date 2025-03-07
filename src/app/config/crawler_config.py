@@ -1,10 +1,9 @@
-from crawl4ai import AsyncWebCrawler, BrowserConfig, CacheMode, CrawlerRunConfig
+from crawl4ai import BrowserConfig, CacheMode, CrawlerRunConfig
 from crawl4ai.content_filter_strategy import PruningContentFilter
 from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 
-
 prune_filter = PruningContentFilter(
-                threshold_type="dynamic",
+    threshold_type="dynamic",
 )
 
 md_generator = DefaultMarkdownGenerator(
@@ -24,6 +23,4 @@ crawler_cfg = CrawlerRunConfig(
     cache_mode=CacheMode.DISABLED,
     markdown_generator=md_generator,
 )
-browser_conf = BrowserConfig(
-    text_mode=True, light_mode=True, verbose=False
-)
+browser_conf = BrowserConfig(text_mode=True, light_mode=True, verbose=False)
