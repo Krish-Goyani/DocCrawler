@@ -3,9 +3,9 @@ import json
 import os
 
 import aiofiles
-from src.app.config.settings import settings
 from fastapi import Depends
 
+from src.app.config.settings import settings
 from src.app.utils.chuking_utils import ChunkingUtils
 from src.app.utils.prompts import (
     chunk_prompt,

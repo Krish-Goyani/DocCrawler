@@ -6,7 +6,12 @@ from fastapi import Depends
 from playwright.async_api import async_playwright
 
 from src.app.config.clients import Clients
-from src.app.config.crawler_config import browser_conf, crawler_cfg, PROGRAMMING_LANGUAGES, SELECTOR_HIERARCHY
+from src.app.config.crawler_config import (
+    PROGRAMMING_LANGUAGES,
+    SELECTOR_HIERARCHY,
+    browser_conf,
+    crawler_cfg,
+)
 from src.app.config.settings import settings
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
@@ -152,7 +157,11 @@ class CrawlerService:
         if file_name not in self.results:
             self.results[file_name] = []
         self.results[file_name].append(
-            {"href": url, "content": result.markdown.fit_markdown}
+            {
+                "href": url,
+                "content": result.markdown.fit_markdown,
+                "source_url": home_url,
+            }
         )
 
         # Only continue if we haven't reached the LLM limit
