@@ -5,8 +5,13 @@ import os
 import aiofiles
 from config.settings import settings
 from fastapi import Depends
-from utils.chuking_utils import ChunkingUtils
-from utils.prompts import chunk_prompt, summary_links_prompt, summary_prompt
+
+from src.app.utils.chuking_utils import ChunkingUtils
+from src.app.utils.prompts import (
+    chunk_prompt,
+    summary_links_prompt,
+    summary_prompt,
+)
 
 
 class ChunkingService:

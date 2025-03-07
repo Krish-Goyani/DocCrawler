@@ -4,9 +4,9 @@ import re
 import time
 
 import openai
-from config.clients import Clients
 from fastapi import Depends
 
+from src.app.config.clients import Clients
 from src.app.models.domain.error import Error
 from src.app.models.domain.log_data import LogData
 from src.app.models.schemas.llm_response import (
