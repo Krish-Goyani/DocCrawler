@@ -89,8 +89,8 @@ class ChunkingService:
             all_chunks.extend(chunks)
             summary_chunks = await self.process_summary_file(user_id, file)
             all_chunks.extend(summary_chunks)
-
-        chunk_file = os.path.join(dir_path, "all_chunks.json")
+        save_path = os.path.join(settings.USER_DATA, user_id)
+        chunk_file = os.path.join(save_path, "all_chunks.json")
         async with aiofiles.open(chunk_file, mode="w") as chunk_f:
             await chunk_f.write(json.dumps(all_chunks, indent=2))
         return user_id
