@@ -91,7 +91,7 @@ class EmbedService:
 
             # Save embeddings to user-specific embeddings directory
             embeddings_dir = os.path.join(
-                settings.USER_DATA, user_id, "embeddings"
+                settings.USER_DATA, user_id
             )
             os.makedirs(embeddings_dir, exist_ok=True)
 

@@ -232,7 +232,6 @@ class ChunkingUtils:
         await self.llm_usage_repo.save_usage(log_data)
         output_text = response.choices[0].message.content.strip()
         chunks = await self.extract_json_list(user_id, output_text)
-        print("Summary Chunks: ", chunks)
         if chunks:
             try:
                 for chunk in chunks:
