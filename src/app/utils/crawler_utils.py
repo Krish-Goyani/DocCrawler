@@ -26,7 +26,7 @@ class CrawlerUtils:
     ) -> None:
         self.error_repo = error_repo
         self.total_input_tokens = 0
-        self.total_outpt_tokens = 0
+        self.total_output_tokens = 0
         self.log_lock = asyncio.Lock()
         self.llm_usage_repo = llm_usage_repo
 

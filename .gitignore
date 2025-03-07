@@ -171,3 +171,4 @@ cython_debug/
 .pypirc
 temp.py
 temp.ipynb
+user_data/

@@ -152,7 +152,7 @@ class CrawlerService:
         if file_name not in self.results:
             self.results[file_name] = []
         self.results[file_name].append(
-            {"href": url, "content": result.fit_markdown}
+            {"href": url, "content": result.markdown.fit_markdown}
         )
 
         # Only continue if we haven't reached the LLM limit
@@ -497,7 +497,7 @@ class CrawlerService:
             # comment below code to ignore the hidden code snippets.
             await self.code_snippets_crawler(num_workers=25, browser=browser)
             # Save results
-            await self.crawler_utils.save_results(self.results)
+            await self.crawler_utils.save_results(self.results, self.user_id)
 
             # Wait for tasks to be cancelled
             await asyncio.gather(*tasks, return_exceptions=True)
