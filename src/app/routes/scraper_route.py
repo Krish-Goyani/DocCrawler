@@ -18,13 +18,3 @@ async def scrape_docs(
     except Exception as e:
         print(e)
         return {"error": str(e)}
-
-
-# @scrape_router.post("/")
-# async def scrape_docs(urls: List[str]):
-#     try:
-#         #response = await scrape_controller.scrape(str(uuid.uuid4()), urls)
-#         return "response"
-#     except Exception as e:
-#         print(e)
-#         return {"error": str(e)}

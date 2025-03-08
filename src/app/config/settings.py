@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     LLM_USAGE_COLLECTION_NAME: str
     USER_DATA: str
     CHUNK_SEMAPHORE: int
+    OPENAI_URL: str
+    OPENAI_MODEL: str
 
     class Config:
         env_file = "src/.env"
