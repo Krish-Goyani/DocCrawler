@@ -71,7 +71,13 @@ class PineconeUtils:
                     metadata = chunk.get("metadata", {})
                     metadata["chunked_data"] = text
                     if "version" in metadata:
-                        metadata["version"] = str(metadata["version"])
+                        if (
+                            metadata["version"] is None
+                            or metadata["version"] == []
+                        ):
+                            del metadata["version"]
+                        else:
+                            metadata["version"] = str(metadata["version"])
 
                     if "has_code_snippet" in metadata:
                         metadata["has_code_snippet"] = str(
