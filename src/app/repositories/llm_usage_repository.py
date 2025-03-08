@@ -1,8 +1,8 @@
 from fastapi import Depends
 
 from src.app.config.database import mongodb_database
+from src.app.core.error_handler import JsonResponseError
 from src.app.models.domain.log_data import LogData
-from src.app.utils.error_handler import JsonResponseError
 
 
 class LLMUsageRepository:
