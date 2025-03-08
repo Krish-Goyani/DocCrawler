@@ -120,19 +120,23 @@ class CrawlerService:
                 )
             return []
 
-    async def crawl_page(self, url: str, depth: int, file_name, home_url):
+    async def crawl_page(
+        self,
+        url: str,
+        depth: int,
+        file_name,
+        home_url,
+        sitemap_mode: bool = False,
+    ):
         """
-        Scrape a single URL using Crawl4AI, extract internal links, and process markdown.
+        Scrape a single URL using Crawl4AI, extract internal links (unless in sitemap mode), and process markdown.
         """
-        global results, queue, processed_urls
-
         if depth >= self.max_depth:
             return
 
         print(f"[CRAWL] Processing {url} at depth {depth}")
 
         try:
-
             async with AsyncWebCrawler(config=browser_conf) as crawler:
                 result = await crawler.arun(url=url, config=crawler_cfg)
         except Exception as e:
@@ -164,6 +168,10 @@ class CrawlerService:
             }
         )
 
+        # When in sitemap mode, do not extract more links.
+        if sitemap_mode:
+            return
+
         # Only continue if we haven't reached the LLM limit
         if not await self.should_process_url(file_name):
             return
@@ -171,7 +179,7 @@ class CrawlerService:
         if (depth + 1) >= self.max_depth:
             return
 
-        # Extract and filter internal links efficiently
+        # Extract and filter internal links (only in non-sitemap mode)
         internal_links = list(
             set(
                 [
@@ -180,15 +188,12 @@ class CrawlerService:
                 ]
             )
         )
-        # Apply domain filter first to reduce the number of URLs sent to GPT
         internal_links = self.crawler_utils.filter_urls_by_domain(
             url, internal_links
         )
 
-        # Batch processing: Split the internal_links into batches of 180
         batch_size = 180
         all_filtered_links = []
-        # Process in batches
         for i in range(0, len(internal_links), batch_size):
             batch = internal_links[i : i + batch_size]
             filtered_batch = await self.filter_links_gpt(batch, file_name)
@@ -198,14 +203,34 @@ class CrawlerService:
 
         new_links = []
         for link in filtered_links:
-            # Check if we've processed or are pending on this URL
             if link not in self.processed_urls:
                 self.processed_urls.add(link)
-                new_links.append((link, depth + 1, file_name, home_url))
+                new_links.append((link, depth + 1, file_name, home_url, False))
 
-        # Add all new links to queue at once
         for link_info in new_links:
             await self.queue.put(link_info)
+
+    async def worker_for_full_page(self, worker_id: int):
+        """Worker coroutine that processes URLs from the queue concurrently."""
+        while True:
+            try:
+                url, depth, file_name, home_url, sitemap_mode = (
+                    await self.queue.get()
+                )
+                await self.crawl_page(
+                    url, depth, file_name, home_url, sitemap_mode
+                )
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                await self.error_repo.insert_error(
+                    Error(
+                        user_id=self.user_id,
+                        error_message=f"[WORKER ERROR] Worker {worker_id}: {e}",
+                    )
+                )
+            finally:
+                self.queue.task_done()
 
     async def handle_element_and_extract(
         self, page, element, text, seen_code_blocks, should_click=True
@@ -376,28 +401,6 @@ class CrawlerService:
         await context.close()
         return code_snippets
 
-    async def worker_for_full_page(self, worker_id: int):
-        """Worker coroutine that processes URLs from the queue concurrently."""
-        while True:
-            try:
-                url, depth, file_name, home_url = await self.queue.get()
-
-                await self.crawl_page(url, depth, file_name, home_url)
-
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                await self.error_repo.insert_error(
-                    Error(
-                        user_id=self.user_id,
-                        error_message=f"[WORKER ERROR] Worker {worker_id}: {e}",
-                    )
-                )
-
-                # print(f"[WORKER ERROR] Worker {worker_id}: {e}")
-            finally:
-                self.queue.task_done()
-
     async def worker_for_code_snippets(self, browser):
         """Worker that processes items from the queue and updates the results."""
         while not self.mini_queue.empty():
@@ -415,7 +418,6 @@ class CrawlerService:
                 [x for x in self.results[file_name] if x["href"] == url][0][
                     "content"
                 ] = final_md_content
-                # self.results[file_name].append({"href": url, "content": final_md_content})
             except asyncio.QueueEmpty:
                 break
             except asyncio.CancelledError:
@@ -466,7 +468,7 @@ class CrawlerService:
         return True
 
     async def main(
-        self, start_urls: list[str], user_id: str, num_workers: int = 60
+        self, start_urls: list[str], user_id: str, num_workers: int = 50
     ):
         self.user_id = user_id
         file_name_tasks = [
@@ -477,38 +479,38 @@ class CrawlerService:
 
         async with async_playwright() as playwright:
             browser = await playwright.chromium.launch(headless=True)
-
-            # Initialize tracking
             for i, url in enumerate(start_urls):
                 file_name = self.file_names[i]
                 self.count_locks[file_name] = asyncio.Lock()
                 self.results[file_name] = []
                 self.llm_request_counts[file_name] = 0
 
-                # Add to queue
-                self.processed_urls.add(url)
-                await self.queue.put((url, 1, file_name, url))
-                print(f"Starting with base URL: {url} -> {file_name}")
+                # Check for sitemap
+                sitemap_urls = await self.crawler_utils.fetch_sitemap(
+                    url, self.user_id
+                )
+                if sitemap_urls:
+                    for sitemap_url in sitemap_urls:
+                        # In sitemap mode, no further link extraction is needed.
+                        await self.queue.put(
+                            (sitemap_url, 1, file_name, url, True)
+                        )
+                    print(f"Using sitemap for base URL: {url} -> {file_name}")
+                else:
+                    self.processed_urls.add(url)
+                    await self.queue.put((url, 1, file_name, url, False))
+                    print(f"Starting with base URL: {url} -> {file_name}")
 
-            # Create worker tasks
             tasks = [
                 asyncio.create_task(self.worker_for_full_page(i))
                 for i in range(num_workers)
             ]
 
-            # Wait for all queue tasks to be processed
             await self.queue.join()
-
-            # Cancel all worker tasks
             for task in tasks:
                 task.cancel()
-
-            # comment below code to ignore the hidden code snippets.
-            await self.code_snippets_crawler(num_workers=25, browser=browser)
-            # Save results
+            await self.code_snippets_crawler(num_workers=20, browser=browser)
             await self.crawler_utils.save_results(self.results, self.user_id)
-
-            # Wait for tasks to be cancelled
             await asyncio.gather(*tasks, return_exceptions=True)
             await browser.close()
 

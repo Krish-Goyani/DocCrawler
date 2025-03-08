@@ -3,10 +3,12 @@ import json
 import os
 import re
 import time
+import xml.etree.ElementTree as ET
 from typing import List
 from urllib.parse import urlparse
 
 import aiofiles
+import aiohttp
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 from fastapi import Depends
 
@@ -180,3 +182,28 @@ class CrawlerUtils:
             )
 
             await self.llm_usage_repo.save_usage(log_data)
+
+    async def fetch_sitemap(self, url, user_id):
+        """Fetch and parse the sitemap for the given URL."""
+        sitemap_url = url.rstrip("/") + "/sitemap.xml"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(sitemap_url) as response:
+                    if response.status == 200:
+                        sitemap_content = await response.read()
+                        tree = ET.ElementTree(ET.fromstring(sitemap_content))
+                        urls = [
+                            elem.text
+                            for elem in tree.iter()
+                            if elem.tag.endswith("loc")
+                        ]
+                        return urls
+        except Exception as e:
+            await self.error_repo.insert_error(
+                Error(
+                    user_id=user_id,
+                    error_message=f"[ERROR] Failed to fetch sitemap for {url}: {e}",
+                )
+            )
+            return []
+        return []
