@@ -7,9 +7,9 @@ from src.app.config.clients import Clients
 
 # from pinecone.grpc import PineconeGRPC as Pinecone
 from src.app.config.settings import settings
+from src.app.core.error_handler import JsonResponseError
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
-from src.app.utils.error_handler import JsonResponseError
 from src.app.utils.upsert_utils import PineconeUtils
 
 

@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import Depends
 
-from src.app.usecases.crawler_usecase import CrawlerUsecase
+from src.app.usecases.crawler_usecase.crawler_usecase import CrawlerUsecase
 from src.app.usecases.scrape_usecase import ScrapeUseCase
 
 

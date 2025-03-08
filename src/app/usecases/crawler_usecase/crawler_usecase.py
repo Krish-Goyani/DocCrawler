@@ -11,7 +11,7 @@ from src.app.services.hidden_code_snippets_service import (
     HiddenCodeSnippetsService,
 )
 from src.app.state.crawler_state import crawler_state
-from src.app.utils.crawler_utils import CrawlerUtils
+from src.app.usecases.crawler_usecase.helper import CrawlerUtils
 
 
 class CrawlerUsecase:

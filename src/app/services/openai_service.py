@@ -1,8 +1,8 @@
 from fastapi import Depends
 
 from src.app.config.settings import settings
+from src.app.core.error_handler import JsonResponseError
 from src.app.services.api_service import ApiService
-from src.app.utils.error_handler import JsonResponseError
 
 
 class OpenAIService:
