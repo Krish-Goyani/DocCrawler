@@ -3,6 +3,7 @@ from fastapi import Depends
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
 from src.app.services.embed_service import EmbedService
+from src.app.utils.error_handler import JsonResponseError
 
 
 class EmbedUsecase:
@@ -30,9 +31,6 @@ class EmbedUsecase:
         try:
             print(f"Starting embedding process for user {user_id}")
 
-            # Initialize the embedding service with the user ID
-            self.embed_service.user_id = user_id
-
             # Process the files to generate embeddings
             await self.embed_service.process_files(
                 user_id=user_id, max_concurrent_tasks=max_concurrent_tasks
@@ -48,4 +46,7 @@ class EmbedUsecase:
                     error_message=f"[ERROR] Failed to process embeddings for user {user_id}: {e}",
                 )
             )
-            raise
+            raise JsonResponseError(
+                status_code=500,
+                detail=f"Error in processing embeddings: {str(e)}",
+            )

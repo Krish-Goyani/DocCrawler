@@ -2,9 +2,11 @@ import asyncio
 import concurrent.futures
 import json
 import os
-from typing import List
+import types
+from typing import Dict, List, Optional
 
 from fastapi import Depends
+from fastembed import TextEmbedding
 
 from src.app.config.settings import settings
 from src.app.models.domain.error import Error
@@ -24,6 +26,83 @@ class EmbedService:
         self.total_chunks = 0
         self.embedded_count = 0
         self.user_id = None
+        # Initialize embedding models
+        self.model = TextEmbedding("BAAI/bge-base-en-v1.5")
+        # Load BM25 from cache or create new one
+        self.bm25 = self.embedding_utils.load_or_create_bm25()
+        self.request_count = 0
+
+    def get_sparse_embedding(
+        self, text: str, user_id: str
+    ) -> Dict[str, List[int]]:
+        """
+        Generate sparse embeddings using BM25 encoding.
+
+        Args:
+            text (str): The input text to encode.
+            user_id (str): The ID of the user making the request.
+
+        Returns:
+            Dict[str, List[int]]: A dictionary containing the indices and values of the sparse vector.
+        """
+        try:
+            doc_sparse_vector = self.bm25.encode_documents(text)
+            return {
+                "indices": doc_sparse_vector["indices"],
+                "values": doc_sparse_vector["values"],
+            }
+        except Exception as e:
+            # Log the error using ErrorRepo
+            self.error_repo.insert_error(
+                Error(
+                    user_id=user_id,
+                    error_message=f"[ERROR] Failed to generate sparse embedding: {e}",
+                )
+            )
+            return {"indices": [], "values": []}
+
+    def get_embedding(self, text: str, user_id: str) -> Optional[List[float]]:
+        """
+        Generate dense embeddings using the fastembed model.
+
+        Args:
+            text (str): The input text to embed.
+            user_id (str): The ID of the user making the request.
+
+        Returns:
+            Optional[List[float]]: The embedding vector, or None if an error occurs.
+        """
+        self.request_count += 1
+        print(f"Embedding text. Request count: {self.request_count}")
+
+        try:
+            # Get the raw embedding output
+            raw = self.model.embed(text, batch_size=24, parallel=True)
+
+            # Convert generator to list if necessary
+            if isinstance(raw, types.GeneratorType):
+                raw = list(raw)
+
+            # Convert numpy arrays to lists
+            if hasattr(raw, "tolist"):
+                embeddings = raw.tolist()
+            elif isinstance(raw, list):
+                embeddings = [
+                    e.tolist() if hasattr(e, "tolist") else e for e in raw
+                ]
+            else:
+                embeddings = raw
+
+            print("Received response")
+            return embeddings[0]
+        except Exception as e:
+            self.error_repo.insert_error(
+                Error(
+                    user_id=user_id,
+                    error_message=f"[ERROR] Failed to generate dense embedding: {e}",
+                )
+            )
+            return None
 
     async def get_embedding_concurrently(
         self,
@@ -36,7 +115,7 @@ class EmbedService:
             async with semaphore:
                 loop = asyncio.get_event_loop()
                 result = await loop.run_in_executor(
-                    pool, self.embedding_utils.get_embedding, text, self.user_id
+                    pool, self.get_embedding, text, self.user_id
                 )
                 return result
         except Exception as e:
@@ -78,10 +157,8 @@ class EmbedService:
 
             for item, embedding in zip(data, embeddings):
                 item["embedding"] = embedding
-                item["sparse_values"] = (
-                    self.embedding_utils.get_sparse_embedding(
-                        item["chunked_data"], self.user_id
-                    )
+                item["sparse_values"] = self.get_sparse_embedding(
+                    item["chunked_data"], self.user_id
                 )
                 self.embedded_count += 1
                 print(

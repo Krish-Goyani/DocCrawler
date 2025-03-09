@@ -1,89 +1,45 @@
-import types
-from typing import Dict, List, Optional
+import os
+import pickle
 
 from fastapi import Depends
-from fastembed import TextEmbedding
 from pinecone_text.sparse import BM25Encoder
 
-from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
 
 
 class EmbeddingUtils:
     def __init__(self, error_repo: ErrorRepo = Depends(ErrorRepo)) -> None:
         self.error_repo = error_repo
-        self.model = TextEmbedding("BAAI/bge-base-en-v1.5")
-        self.bm25 = BM25Encoder().default()
-        self.request_count = 0
 
-    def get_sparse_embedding(
-        self, text: str, user_id: str
-    ) -> Dict[str, List[int]]:
+    def load_or_create_bm25(self) -> BM25Encoder:
         """
-        Generate sparse embeddings using BM25 encoding.
-
-        Args:
-            text (str): The input text to encode.
-            user_id (str): The ID of the user making the request.
+        Loads BM25 model from pickle file if it exists, otherwise creates new one and saves it
 
         Returns:
-            Dict[str, List[int]]: A dictionary containing the indices and values of the sparse vector.
+            BM25Encoder: The loaded or newly created BM25 model
         """
-        try:
-            doc_sparse_vector = self.bm25.encode_documents(text)
-            return {
-                "indices": doc_sparse_vector["indices"],
-                "values": doc_sparse_vector["values"],
-            }
-        except Exception as e:
-            # Log the error using ErrorRepo
-            self.error_repo.insert_error(
-                Error(
-                    user_id=user_id,
-                    error_message=f"[ERROR] Failed to generate sparse embedding: {e}",
-                )
-            )
-            return {"indices": [], "values": []}
-
-    def get_embedding(self, text: str, user_id: str) -> Optional[List[float]]:
-        """
-        Generate dense embeddings using the fastembed model.
-
-        Args:
-            text (str): The input text to embed.
-            user_id (str): The ID of the user making the request.
-
-        Returns:
-            Optional[List[float]]: The embedding vector, or None if an error occurs.
-        """
-        self.request_count += 1
-        print(f"Embedding text. Request count: {self.request_count}")
+        cache_dir = "cache"
+        cache_file = os.path.join(cache_dir, "bm25_model.pkl")
 
         try:
-            # Get the raw embedding output
-            raw = self.model.embed(text, batch_size=24, parallel=True)
+            os.makedirs(cache_dir, exist_ok=True)
 
-            # Convert generator to list if necessary
-            if isinstance(raw, types.GeneratorType):
-                raw = list(raw)
+            if os.path.exists(cache_file):
+                print("Loading BM25 model from cache...")
+                with open(cache_file, "rb") as f:
+                    return pickle.load(f)
 
-            # Convert numpy arrays to lists
-            if hasattr(raw, "tolist"):
-                embeddings = raw.tolist()
-            elif isinstance(raw, list):
-                embeddings = [
-                    e.tolist() if hasattr(e, "tolist") else e for e in raw
-                ]
-            else:
-                embeddings = raw
+            # Create new model if no cache exists
+            print("Creating new BM25 model...")
+            bm25 = BM25Encoder().default()
 
-            print("Received response")
-            return embeddings[0]
+            # Save to cache
+            print("Saving BM25 model to cache...")
+            with open(cache_file, "wb") as f:
+                pickle.dump(bm25, f)
+
+            return bm25
         except Exception as e:
-            self.error_repo.insert_error(
-                Error(
-                    user_id=user_id,
-                    error_message=f"[ERROR] Failed to generate dense embedding: {e}",
-                )
-            )
-            return None
+            print(f"Error loading/creating BM25 model: {e}")
+            # Return new model as fallback
+            return BM25Encoder().default()
