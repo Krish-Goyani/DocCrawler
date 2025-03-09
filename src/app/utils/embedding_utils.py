@@ -5,7 +5,6 @@ from typing import Dict, List, Optional
 
 from fastapi import Depends
 from fastembed import TextEmbedding
-from pinecone_text.sparse import BM25Encoder
 
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
