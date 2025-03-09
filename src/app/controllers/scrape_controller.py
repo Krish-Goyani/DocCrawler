@@ -2,16 +2,15 @@ from typing import List
 
 from fastapi import Depends
 
+from src.app.usecases.chunking_usecase.chunking_usecase import ChunkingUseCase
+from src.app.usecases.crawler_usecase.crawler_usecase import CrawlerUsecase
 from src.app.usecases.scrape_usecase import ScrapeUseCase
 from src.app.usecases.upsert_usecase.upsert_usercase import UpsertUseCase
-from src.app.usecases.crawler_usecase.crawler_usecase import CrawlerUsecase
-from src.app.usecases.chunking_usecase.chunking_usecase import ChunkingUseCase
+
 
 class ScrapeController:
     def __init__(
-        
         self,
-       
         scrape_usecase: ScrapeUseCase = Depends(),
         chunking_usecase: ChunkingUseCase = Depends(),
         crawler_usecase=Depends(CrawlerUsecase),

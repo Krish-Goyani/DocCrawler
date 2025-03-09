@@ -57,6 +57,8 @@ class ApiService:
                 status_code=500,
                 detail=f"OpenAI API request failed with error: {str(exc)}",
             )
+
+
 import httpx
 
 from src.app.core.error_handler import JsonResponseError
