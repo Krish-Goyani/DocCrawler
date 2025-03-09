@@ -18,6 +18,9 @@ from src.app.models.domain.log_data import LogData
 from src.app.models.schemas.llm_response import FilterPromptResponse
 from src.app.repositories.error_repository import ErrorRepo
 from src.app.repositories.llm_usage_repository import LLMUsageRepository
+from src.app.services.openai_service import OpenAIService
+from src.app.state.crawler_state import crawler_state
+from src.app.utils.prompts import filter_prompt
 
 
 class CrawlerUtils:
@@ -25,12 +28,15 @@ class CrawlerUtils:
         self,
         error_repo=Depends(ErrorRepo),
         llm_usage_repo=Depends(LLMUsageRepository),
+        openai_service=Depends(OpenAIService),
     ) -> None:
         self.error_repo = error_repo
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self.log_lock = asyncio.Lock()
         self.llm_usage_repo = llm_usage_repo
+        self.state = crawler_state
+        self.openai_service = openai_service
 
     async def get_file_name(self, base_url, user_id):
         try:
@@ -207,3 +213,61 @@ class CrawlerUtils:
             )
             return []
         return []
+
+    async def filter_links_gpt(self, links, file_name, user_id):
+        if not links:
+            return []
+        lock = await self.state.get_lock(file_name)
+        async with lock:
+            if (
+                self.state.llm_request_counts.get(file_name, 0)
+                >= self.state.max_llm_request_count
+            ):
+                return []
+            self.state.llm_request_counts[file_name] = (
+                self.state.llm_request_counts.get(file_name, 0) + 1
+            )
+
+        input_text = f"{filter_prompt}\n**INPUT:**\n{links}\n**OUTPUT:**"
+        start_time = time.time()
+
+        try:
+            response = await self.openai_service.get_completion(
+                prompt=input_text,
+                temperature=0,
+            )
+
+            end_time = time.time()
+            print(response)
+            usage = response["usage"]
+            input_tokens = usage["prompt_tokens"]
+            output_tokens = usage["completion_tokens"]
+
+            asyncio.create_task(
+                self.log_usage(
+                    start_time,
+                    end_time,
+                    input_tokens,
+                    output_tokens,
+                    self.state.llm_request_counts,
+                )
+            )
+
+            filtered_links = response["choices"][0]["message"][
+                "content"
+            ].strip()
+            return await self.clean_gpt_output(filtered_links, user_id)
+
+        except Exception as e:
+            await self.error_repo.insert_error(
+                Error(
+                    user_id=user_id,
+                    error_message=f"[ERROR] LLM call failed: {e}",
+                )
+            )
+            # Release the counter if the call failed
+            async with self.state.count_locks.get(file_name, asyncio.Lock()):
+                self.state.llm_request_counts[file_name] = max(
+                    0, self.state.llm_request_counts.get(file_name, 0) - 1
+                )
+            return []

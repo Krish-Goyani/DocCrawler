@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from fastapi import Depends
 
+<<<<<<< HEAD
 from src.app.usecases.embed_usecase.embed_usecase import EmbedUsecase
 from src.app.usecases.scrape_usecase import ScrapeUseCase
 

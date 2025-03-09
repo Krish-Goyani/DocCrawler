@@ -22,3 +22,4 @@ bson
 aiohttp
 xml-python
 aiofiles
+httpx
