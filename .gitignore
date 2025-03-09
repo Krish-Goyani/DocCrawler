@@ -173,3 +173,5 @@ temp.py
 temp.ipynb
 user_data/
 .DS_Store
+launch.json
+bm25_model.pkl
