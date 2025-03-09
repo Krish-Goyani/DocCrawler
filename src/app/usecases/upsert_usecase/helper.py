@@ -1,26 +1,12 @@
-import itertools
 import json
-import time
 import uuid
 from typing import Any, Dict, List
 
 from fastapi import Depends
-from pinecone import ServerlessSpec
 
 from src.app.core.error_handler import JsonResponseError
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
-
-# dont use this file
-########################
-########################
-########################
-########################
-########################
-########################
-########################
-########################
-########################
 
 
 class PineconeUtils:
@@ -87,6 +73,10 @@ class PineconeUtils:
                     else:
                         del metadata["has_code_snippet"]
 
+                if "supported_languages" in metadata:
+                    if metadata["supported_languages"] in [None, [], "null"]:
+                        del metadata["supported_languages"]
+
                 # Create a record in the format Pinecone expects
                 # Keep chunked_data as a separate field
                 record = {
@@ -111,65 +101,3 @@ class PineconeUtils:
             )
 
         return pinecone_records
-
-    async def ensure_index_exists(
-        self,
-        index_name: str,
-        pc,
-        user_id: str,
-        dimension: int,
-        metric: str = "dotproduct",
-    ) -> bool:
-        """
-        Check if index exists, and create it if not.
-
-        Args:
-            index_name: Name of the index to check/create
-            dimension: Dimension of the vectors
-            metric: Distance metric to use (default: cosine)
-
-        Returns:
-            bool: True if index exists or was created successfully
-        """
-        try:
-            # Check if index already exists
-            existing_indexes = [x["name"] for x in pc.list_indexes()]
-            if index_name in existing_indexes:
-                return True
-
-            # Create with serverless spec (use your preferred settings)
-            pc.create_index(
-                name=index_name,
-                dimension=dimension,
-                metric=metric,
-                spec=ServerlessSpec(
-                    cloud="aws",
-                    region="us-east-1",
-                ),
-            )
-
-            # Wait for index to be ready
-            existing_indexes = [x["name"] for x in pc.list_indexes()]
-            while not index_name in existing_indexes:
-                time.sleep(1)
-
-            return True
-
-        except Exception as e:
-            await self.error_repo.insert_error(
-                Error(
-                    user_id=user_id,
-                    error_message=f"Error creating index: {str(e)}",
-                )
-            )
-            raise JsonResponseError(
-                status_code=500, detail=f"Error creating index: {str(e)}"
-            )
-
-    def pine_chunks(self, iterable, batch_size=200):
-        """Helper function to break an iterable into chunks of batch_size."""
-        it = iter(iterable)
-        chunk = list(itertools.islice(it, batch_size))
-        while chunk:
-            yield chunk
-            chunk = list(itertools.islice(it, batch_size))

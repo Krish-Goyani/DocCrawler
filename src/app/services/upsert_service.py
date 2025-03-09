@@ -1,5 +1,7 @@
+import asyncio
 import os
 import shutil
+import time
 
 from fastapi import Depends
 
@@ -10,6 +12,7 @@ from src.app.config.settings import settings
 from src.app.core.error_handler import JsonResponseError
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
+from src.app.services.pinecone_service import PineconeService
 from src.app.utils.upsert_utils import PineconeUtils
 
 
@@ -19,36 +22,20 @@ class UpsertService:
         pinecone_client=Depends(Clients),
         error_repo: ErrorRepo = Depends(ErrorRepo),
         pinecone_utils: PineconeUtils = Depends(PineconeUtils),
+        pinecone_service: PineconeService = Depends(),
     ):
         self.client = pinecone_client.get_pinecone_client()
         self.index_name = settings.INDEX_NAME
         self.error_repo = error_repo
         self.pinecone_utils = pinecone_utils
+        self.pinecone_service = pinecone_service
+        self.upsert_batch_size = 100
 
-    async def upload_vectors(self, user_id: str):
-
-        # all_chunks.json path
-        base_dir = os.path.dirname(
-            os.path.dirname(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            )
-        )
-        embeddings_folder = os.path.join(base_dir, settings.USER_DATA, user_id)
-
-        if not os.path.exists(embeddings_folder):
-            await self.error_repo.insert_error(
-                Error(
-                    user_id=user_id,
-                    error_message=f"File not found: {embeddings_folder}",
-                )
-            )
-            raise JsonResponseError(
-                status_code=404, detail=f"File not found: {embeddings_folder}"
-            )
+    async def upload_vectors(self, user_id: str, file_path):
 
         # Load JSON file for Pinecone
         vector_data = await self.pinecone_utils.load_json_files_for_pinecone(
-            embeddings_folder, user_id
+            file_path, user_id
         )
 
         if not vector_data:
@@ -65,58 +52,59 @@ class UpsertService:
         DIMENSION = len(vector_data[0]["values"])
 
         # Ensure index exists
-        if not await self.pinecone_utils.ensure_index_exists(
-            self.index_name, self.client, user_id, DIMENSION
-        ):
-            await self.error_repo.insert_error(
-                Error(
-                    user_id=user_id,
-                    error_message="Failed to create or validate index. Exiting.",
-                )
+        available_indexes = await self.pinecone_service.list_pinecone_indexes()
+        if self.index_name not in available_indexes.keys():
+            index_host = await self.pinecone_service.create_index(
+                index_name=settings.INDEX_NAME,
+                dimension=DIMENSION,
+                metric="dotproduct",
             )
-            raise JsonResponseError(
-                status_code=500,
-                detail="Failed to create or validate index. Exiting.",
-            )
+        else:
+            index_host = available_indexes[self.index_name]
 
-        index = self.client.Index(name=self.index_name)
-        before_stats = index.describe_index_stats()
-
-        # Perform batched async upserts
-
-        async_results = [
-            index.upsert(vectors=batch, async_req=True, namespace="default")
-            for batch in self.pinecone_utils.pine_chunks(
-                vector_data, batch_size=100
-            )
-        ]
-        # Wait for completion and handle results
-        for i, async_result in enumerate(async_results):
-            try:
-                result = async_result.result()  # Use result() instead of get()
-            except Exception as e:
-                await self.error_repo.insert_error(
-                    Error(
-                        user_id=user_id,
-                        error_message=f"Error in upserting: {str(e)}",
-                    )
-                )
-                raise JsonResponseError(
-                    status_code=500, detail=f"Error in upserting: {str(e)}"
-                )
-
-        # Delete the user_id folder
         try:
-            shutil.rmtree(embeddings_folder)
+            batches = [
+                vector_data[i : i + self.upsert_batch_size]
+                for i in range(0, len(vector_data), self.upsert_batch_size)
+            ]
+
+            upsert_tasks = [
+                self.pinecone_service.upsert_vectors(index_host, batch)
+                for batch in batches
+            ]
+
+            # Gather results from all batches
+            batch_results = await asyncio.gather(*upsert_tasks)
+
+            # Combine results
+            total_upserted = sum(
+                result.get("upsertedCount", 0) for result in batch_results
+            )
+            time.sleep(15)
+
         except Exception as e:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"Failed to delete folder: {embeddings_folder}. Error: {str(e)}",
+                    error_message=f"Error in upserting: {str(e)}",
+                )
+            )
+            raise JsonResponseError(
+                status_code=500, detail=f"Error in upserting: {str(e)}"
+            )
+
+        # Delete the user_id folder
+        try:
+            shutil.rmtree(os.path.join(settings.USER_DATA, user_id))
+        except Exception as e:
+            await self.error_repo.insert_error(
+                Error(
+                    user_id=user_id,
+                    error_message=f"Failed to delete folder: {user_id}. Error: {str(e)}",
                 )
             )
 
         return {
             "mesage": "Upsertion completed successfully!",
-            "upsertedCount": len(vector_data),
+            "upsertedCount": total_upserted,
         }

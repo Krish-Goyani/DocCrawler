@@ -3,7 +3,6 @@ from typing import Dict, List, Optional
 
 from fastapi import Depends
 from fastembed import TextEmbedding
-from pinecone_text.sparse import BM25Encoder
 
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
@@ -13,7 +12,7 @@ class EmbeddingUtils:
     def __init__(self, error_repo: ErrorRepo = Depends(ErrorRepo)) -> None:
         self.error_repo = error_repo
         self.model = TextEmbedding("BAAI/bge-base-en-v1.5")
-        self.bm25 = BM25Encoder().default()
+        self.bm25 = None
         self.request_count = 0
 
     def get_sparse_embedding(
