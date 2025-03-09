@@ -1,6 +1,6 @@
 import httpx
 
-from src.app.utils.error_handler import JsonResponseError
+from src.app.core.error_handler import JsonResponseError
 
 
 class ApiService:

@@ -6,7 +6,7 @@ import aiofiles
 from fastapi import Depends
 
 from src.app.config.settings import settings
-from src.app.utils.chunking_utils import ChunkingUtils
+from src.app.usecases.chunking_usecase.chunking_helper import ChunkingUtils
 
 
 class ChunkingUseCase:
@@ -21,8 +21,8 @@ class ChunkingUseCase:
         :return: The user ID.
         """
 
-        dir_path = os.path.join(settings.USER_DATA, user_id, "results")
-
+        # dir_path = os.path.join(settings.USER_DATA, user_id, "results")
+        dir_path = os.path.join(settings.USER_DATA, "0998f5f8-637e-4a72-84aa-8797e1fcb63b", "results")
         json_files = [
             os.path.join(dir_path, file)
             for file in os.listdir(dir_path)
@@ -45,7 +45,8 @@ class ChunkingUseCase:
             if summary_chunks:
                 all_chunks.extend(summary_chunks)
 
-        save_path = os.path.join(settings.USER_DATA, user_id)
+        save_path = os.path.join(settings.USER_DATA, "0998f5f8-637e-4a72-84aa-8797e1fcb63b")
+        # save_path = os.path.join(settings.USER_DATA, user_id)
         chunk_file = os.path.join(save_path, "all_chunks.json")
         async with aiofiles.open(chunk_file, mode="w") as chunk_f:
             await chunk_f.write(json.dumps(all_chunks, indent=2))
