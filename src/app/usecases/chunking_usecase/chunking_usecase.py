@@ -21,8 +21,7 @@ class ChunkingUseCase:
         :return: The user ID.
         """
 
-        # dir_path = os.path.join(settings.USER_DATA, user_id, "results")
-        dir_path = os.path.join(settings.USER_DATA, "0998f5f8-637e-4a72-84aa-8797e1fcb63b", "results")
+        dir_path = os.path.join(settings.USER_DATA, user_id, "results")
         json_files = [
             os.path.join(dir_path, file)
             for file in os.listdir(dir_path)
@@ -45,8 +44,7 @@ class ChunkingUseCase:
             if summary_chunks:
                 all_chunks.extend(summary_chunks)
 
-        save_path = os.path.join(settings.USER_DATA, "0998f5f8-637e-4a72-84aa-8797e1fcb63b")
-        # save_path = os.path.join(settings.USER_DATA, user_id)
+        save_path = os.path.join(settings.USER_DATA, user_id)
         chunk_file = os.path.join(save_path, "all_chunks.json")
         async with aiofiles.open(chunk_file, mode="w") as chunk_f:
             await chunk_f.write(json.dumps(all_chunks, indent=2))
