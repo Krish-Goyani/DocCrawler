@@ -6,7 +6,7 @@ import aiofiles
 from fastapi import Depends
 
 from src.app.config.settings import settings
-from src.app.utils.chunking_utils import ChunkingUtils
+from src.app.usecases.chunking_usecase.chunking_helper import ChunkingUtils
 
 
 class ChunkingUseCase:
@@ -22,7 +22,6 @@ class ChunkingUseCase:
         """
 
         dir_path = os.path.join(settings.USER_DATA, user_id, "results")
-
         json_files = [
             os.path.join(dir_path, file)
             for file in os.listdir(dir_path)
