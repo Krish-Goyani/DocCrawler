@@ -59,7 +59,6 @@ class EmbeddingUtils:
             Optional[List[float]]: The embedding vector, or None if an error occurs.
         """
         self.request_count += 1
-        print(f"Embedding text. Request count: {self.request_count}")
 
         try:
             # Get the raw embedding output
@@ -78,8 +77,6 @@ class EmbeddingUtils:
                 ]
             else:
                 embeddings = raw
-
-            print("Received response")
             return embeddings[0]
         except Exception as e:
             self.error_repo.insert_error(
