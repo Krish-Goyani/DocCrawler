@@ -19,9 +19,15 @@ class Settings(BaseSettings):
     CHUNK_SEMAPHORE: int
     OPENAI_URL: str
     OPENAI_MODEL: str
+    PINECONE_API_KEY: str
+    PINECONE_LIST_INDEX_URL: str
+    PINECONE_API_VERSION: str
+    PINECONE_CREATE_INDEX_URL: str
+    PINECONE_UPSERT_URL: str
 
     class Config:
         env_file = "src/.env"
+        env_file_encoding = "utf-8"
 
 
 settings = Settings()

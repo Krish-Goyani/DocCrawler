@@ -7,7 +7,7 @@ from pinecone_text.sparse import BM25Encoder
 from src.app.repositories.error_repository import ErrorRepo
 
 
-class EmbeddingUtils:
+class BM25Loader:
     def __init__(self, error_repo: ErrorRepo = Depends(ErrorRepo)) -> None:
         self.error_repo = error_repo
 
@@ -25,16 +25,13 @@ class EmbeddingUtils:
             os.makedirs(cache_dir, exist_ok=True)
 
             if os.path.exists(cache_file):
-                print("Loading BM25 model from cache...")
                 with open(cache_file, "rb") as f:
                     return pickle.load(f)
 
             # Create new model if no cache exists
-            print("Creating new BM25 model...")
             bm25 = BM25Encoder().default()
 
             # Save to cache
-            print("Saving BM25 model to cache...")
             with open(cache_file, "wb") as f:
                 pickle.dump(bm25, f)
 
