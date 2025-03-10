@@ -38,7 +38,7 @@ class HiddenCodeSnippetsService:
             if should_click:
                 print(f"Clicking: {text} in element")
                 await element.click()
-                await asyncio.sleep(0.5)  # Reduced sleep time
+                await asyncio.sleep(0.25)
 
             # Extract code blocks after the action
             code_blocks = await page.locator(

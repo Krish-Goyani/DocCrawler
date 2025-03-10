@@ -11,7 +11,7 @@ from src.app.config.settings import settings
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
 from src.app.state.crawler_state import crawler_state
-from src.app.utils.crawler_utils import CrawlerUtils
+from src.app.usecases.crawler_usecase.helper import CrawlerUtils
 
 
 class CrawlerService:
@@ -75,7 +75,7 @@ class CrawlerService:
             {
                 "href": url,
                 "content": result.markdown.fit_markdown,
-                "source_url": home_url,
+                "base_url": home_url,
             }
         )
 

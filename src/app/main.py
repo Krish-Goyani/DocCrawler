@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.app.config.database import mongodb_database
+from src.app.routes.query_route import query_router
 from src.app.routes.scraper_route import scrape_router
 
 
@@ -17,3 +18,4 @@ async def db_lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=db_lifespan)
 app.include_router(router=scrape_router)
+app.include_router(router=query_router)

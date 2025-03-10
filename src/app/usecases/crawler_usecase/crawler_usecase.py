@@ -11,7 +11,7 @@ from src.app.services.hidden_code_snippets_service import (
     HiddenCodeSnippetsService,
 )
 from src.app.state.crawler_state import crawler_state
-from src.app.utils.crawler_utils import CrawlerUtils
+from src.app.usecases.crawler_usecase.helper import CrawlerUtils
 
 
 class CrawlerUsecase:
@@ -140,7 +140,7 @@ class CrawlerUsecase:
             for task in tasks:
                 task.cancel()
 
-            await self.code_snippets_crawler(num_workers=20, browser=browser)
+            await self.code_snippets_crawler(num_workers=15, browser=browser)
             await self.crawler_utils.save_results(
                 self.state.results, self.user_id
             )
@@ -153,4 +153,4 @@ class CrawlerUsecase:
                     f"{file_name}: {count}/{self.state.max_llm_request_count} LLM calls, {len(self.state.results.get(file_name, []))} pages crawled"
                 )
 
-            return self.user_id
+        return self.user_id

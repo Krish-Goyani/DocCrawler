@@ -19,11 +19,13 @@ class Settings(BaseSettings):
     CHUNK_SEMAPHORE: int
     OPENAI_URL: str
     OPENAI_MODEL: str
-    PINECONE_API_KEY: str
     PINECONE_LIST_INDEX_URL: str
     PINECONE_API_VERSION: str
     PINECONE_CREATE_INDEX_URL: str
     PINECONE_UPSERT_URL: str
+    PINECONE_QUERY_URL: str
+    JINA_RERANKING_MODEL: str
+    JINA_RERANKING_URL: str
 
     class Config:
         env_file = "src/.env"

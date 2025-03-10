@@ -5,7 +5,7 @@ from fastapi import Depends
 from pinecone_text.sparse import BM25Encoder
 
 from src.app.repositories.error_repository import ErrorRepo
-
+from src.app.core.error_handler import JsonResponseError
 
 class BM25Loader:
     def __init__(self, error_repo: ErrorRepo = Depends(ErrorRepo)) -> None:
@@ -37,6 +37,4 @@ class BM25Loader:
 
             return bm25
         except Exception as e:
-            print(f"Error loading/creating BM25 model: {e}")
-            # Return new model as fallback
-            return BM25Encoder().default()
+            raise JsonResponseError(status_code=500, detail=f"Error loading/creating BM25 model: {e}")
