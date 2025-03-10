@@ -232,13 +232,12 @@ class CrawlerUtils:
         start_time = time.time()
 
         try:
-            response = await self.openai_service.get_completion(
+            response = await self.openai_service.completions(
                 prompt=input_text,
                 temperature=0,
             )
 
             end_time = time.time()
-            print(response)
             usage = response["usage"]
             input_tokens = usage["prompt_tokens"]
             output_tokens = usage["completion_tokens"]

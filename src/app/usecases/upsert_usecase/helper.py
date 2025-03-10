@@ -61,11 +61,32 @@ class PineconeUtils:
                 if "versions" in metadata and metadata["versions"]:
                     value = metadata["versions"]
                     if value in [None, [], "", "none", "null"]:
-                        del metadata["versions"]
+                        try:
+                            del metadata["versions"]
+                        except Exception as e:
+                            pass
                     else:
                         metadata["versions"] = str(value)
                 else:
-                    del metadata["versions"]
+                    try:
+                        del metadata["versions"]
+                    except Exception as e:
+                        pass
+
+                if "version" in metadata and metadata["version"]:
+                    value = metadata["version"]
+                    if value in [None, [], "", "none", "null"]:
+                        try:
+                            del metadata["version"]
+                        except Exception as e:
+                            pass
+                    else:
+                        metadata["version"] = str(value)
+                else:
+                    try:
+                        del metadata["version"]
+                    except Exception as e:
+                        pass
 
                 if "has_code_snippet" in metadata:
                     if metadata["has_code_snippet"]:
@@ -73,16 +94,25 @@ class PineconeUtils:
                             metadata["has_code_snippet"]
                         )
                     else:
-                        del metadata["has_code_snippet"]
+                        try:
+                            del metadata["has_code_snippet"]
+                        except Exception as e:
+                            pass
 
                 if (
                     "supported_languages" in metadata
                     and metadata["supported_languages"]
                 ):
                     if metadata["supported_languages"] in [None, [], "null"]:
-                        del metadata["supported_languages"]
+                        try:
+                            del metadata["supported_languages"]
+                        except Exception as e:
+                            pass
                 else:
-                    del metadata["supported_languages"]
+                    try:
+                        del metadata["supported_languages"]
+                    except Exception as e:
+                        pass
 
                 # Create a record in the format Pinecone expects
                 # Keep chunked_data as a separate field
