@@ -9,7 +9,7 @@ class OpenAIService:
     def __init__(self, api_service: ApiService = Depends()) -> None:
         self.api_service = api_service
         self.base_url = settings.OPENAI_URL
-        self.endpoint = "chat/completions"
+        #self.endpoint = "chat/completions"
         self.openai_model = settings.OPENAI_MODEL
 
     async def completions(self, prompt: str, **params) -> dict:
@@ -20,7 +20,7 @@ class OpenAIService:
         :param params: The optional parameters.
         :return: The completions for the given prompt.
         """
-        url = f"{self.base_url}/{self.endpoint}"
+        url = f"{self.base_url}"
 
         headers = {
             "Content-Type": "application/json",
@@ -42,7 +42,7 @@ class OpenAIService:
             response = await self.api_service.post(
                 url, headers=headers, data=payload
             )
-            print("Response: ", response)
+
             return response
         except Exception as e:
             raise JsonResponseError(status_code=500, detail=str(e))
