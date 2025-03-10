@@ -69,15 +69,17 @@ class PineconeUtils:
                 # Extract the text content
                 text = chunk.get("chunked_data")
 
-                # Extract metadata (without modifying it to include text)
-                metadata = chunk.get("metadata", {})
-                metadata["chunked_data"] = text
-                if "version" in metadata:
-                    value = metadata["version"]
-                    if value in [None, [], "", "none", "null"]:
-                        del metadata["version"]
-                    else:
-                        metadata["version"] = str(value)
+                    # Extract metadata (without modifying it to include text)
+                    metadata = chunk.get("metadata", {})
+                    metadata["chunked_data"] = text
+                    if "version" in metadata:
+                        if (
+                            metadata["version"] is None
+                            or metadata["version"] == []
+                        ):
+                            del metadata["version"]
+                        else:
+                            metadata["version"] = str(metadata["version"])
 
                 if "has_code_snippet" in metadata:
                     if metadata["has_code_snippet"]:

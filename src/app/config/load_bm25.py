@@ -1,33 +1,40 @@
 import os
 import pickle
 
+from fastapi import Depends
 from pinecone_text.sparse import BM25Encoder
 
+from src.app.repositories.error_repository import ErrorRepo
+from src.app.core.error_handler import JsonResponseError
 
 class BM25Loader:
-    CACHE_DIR = "cache"
-    CACHE_FILE = os.path.join(CACHE_DIR, "bm25_model.pkl")
+    def __init__(self, error_repo: ErrorRepo = Depends(ErrorRepo)) -> None:
+        self.error_repo = error_repo
 
-    @classmethod
-    def load_or_create_bm25(cls):
+    def load_or_create_bm25(self) -> BM25Encoder:
         """
-        Loads BM25 model from pickle file if it exists, otherwise creates a new one and saves it.
+        Loads BM25 model from pickle file if it exists, otherwise creates new one and saves it
+
+        Returns:
+            BM25Encoder: The loaded or newly created BM25 model
         """
+        cache_dir = "cache"
+        cache_file = os.path.join(cache_dir, "bm25_model.pkl")
+
         try:
-            os.makedirs(cls.CACHE_DIR, exist_ok=True)
+            os.makedirs(cache_dir, exist_ok=True)
 
-            if os.path.exists(cls.CACHE_FILE):
-                print("Loading BM25 model from cache...")
-                with open(cls.CACHE_FILE, "rb") as f:
+            if os.path.exists(cache_file):
+                with open(cache_file, "rb") as f:
                     return pickle.load(f)
 
+            # Create new model if no cache exists
             bm25 = BM25Encoder().default()
 
-            with open(cls.CACHE_FILE, "wb") as f:
+            # Save to cache
+            with open(cache_file, "wb") as f:
                 pickle.dump(bm25, f)
 
             return bm25
-
         except Exception as e:
-            print(f"Error loading BM25 model: {e}")
-            return BM25Encoder().default()
+            raise JsonResponseError(status_code=500, detail=f"Error loading/creating BM25 model: {e}")

@@ -51,7 +51,11 @@ class DocumentCrawlerApp:
             st.subheader("Status")
             self.status_container = st.container()
 
-        return start_button, url_text
+        # Add query input and button
+        query = st.text_input("Enter your query")
+        query_button = st.button("Submit")
+
+        return start_button, url_text, query, query_button
 
     def validate_urls(self, url_text: str) -> List[str]:
         urls = [url.strip() for url in url_text.split("\n") if url.strip()]
@@ -61,6 +65,18 @@ class DocumentCrawlerApp:
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 "http://localhost:8000/", json=urls
+            ) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    raise Exception(
+                        f"API call failed with status {response.status}"
+                    )
+
+    async def call_query_api(self, query: str) -> Dict[str, Any]:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"http://localhost:8000/query?query={query}"
             ) as response:
                 if response.status == 200:
                     return await response.json()
@@ -109,8 +125,18 @@ class DocumentCrawlerApp:
             except Exception as e:
                 st.error(f"An error occurred: {str(e)}")
 
+    async def process_query(self, query: str):
+        with self.status_container:
+            st.info(f"Processing query: {query}")
+            try:
+                response = await self.call_query_api(query)
+                st.success("Query results:")
+                st.json(response)
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}")
+
     def run(self):
-        start_button, url_text = self.render_ui()
+        start_button, url_text, query, query_button = self.render_ui()
 
         if start_button:
             urls = self.validate_urls(url_text)
@@ -121,6 +147,14 @@ class DocumentCrawlerApp:
 
             # Use asyncio to run the async process_urls function
             asyncio.run(self.process_urls(urls))
+
+        if query_button:
+            if not query:
+                st.error("Please enter a query")
+                return
+
+            # Use asyncio to run the async process_query function
+            asyncio.run(self.process_query(query))
 
 
 def main():

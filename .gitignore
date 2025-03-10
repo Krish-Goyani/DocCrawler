@@ -172,6 +172,7 @@ cython_debug/
 temp.py
 temp.ipynb
 user_data/
+cache/
 .DS_Store
 launch.json
 bm25_model.pkl
