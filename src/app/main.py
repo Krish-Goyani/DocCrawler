@@ -3,8 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.app.config.database import mongodb_database
-from src.app.routes.scraper_route import scrape_router
 from src.app.routes.query_route import query_router
+from src.app.routes.scraper_route import scrape_router
 
 
 @asynccontextmanager
