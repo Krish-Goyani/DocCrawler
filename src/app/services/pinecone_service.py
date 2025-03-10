@@ -133,7 +133,6 @@ class PineconeService:
         include_metadata: bool,
         filter_dict: dict = None,
     ):
-
         headers = {
             "Api-Key": self.pinecone_api_key,
             "Accept": "application/json",
@@ -159,8 +158,7 @@ class PineconeService:
 
         if filter_dict:
             data["filter"] = filter_dict
-
-        url = self.query_url.format(index_host)
+        url = self.query_url.format(index_host=index_host)
         try:
             response = await self.api_service.post(
                 url=url, headers=headers, data=data

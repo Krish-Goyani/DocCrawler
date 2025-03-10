@@ -50,10 +50,15 @@ class ApiService:
         except httpx.RequestError as exc:
             raise JsonResponseError(
                 status_code=500,
-                detail=f"OpenAI API request failed with error: {str(exc)}",
+                detail=f"API request failed with error: {str(exc)}",
             )
         except httpx.HTTPStatusError as exc:
             raise JsonResponseError(
                 status_code=500,
-                detail=f"OpenAI API request failed with error: {str(exc)}",
+                detail=f"API request failed with error: {str(exc)}",
+            )
+        except Exception as exc:
+            raise JsonResponseError(
+                status_code=500,
+                detail=f"API request failed with error: {str(exc)}",
             )

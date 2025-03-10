@@ -46,14 +46,13 @@ chunk_prompt = """
 
     ### Chunking Guidelines:
     - Maintain semantic meaning: Ensure each chunk contains a **complete concept, topic, or explanation**.
-    - Preserve code blocks: If a chunk contains a **code snippet**, keep it within the same chunk and also the document contains the code blocks for the various languages that implement the same functionality some are added to gather at the end of the document with title "Additional Code Snippets" put them in appropriate chunk.
+    - Preserve code blocks: If a chunk contains a **code snippet**, keep it within the same chunk.
     - Segment long sections logically: Chunk by **headings, subheadings, or topics** rather than splitting arbitrarily.
 
     ### Metadata Extraction:
     For each chunk, extract and include the following metadata:
     - "SDK/Framework_name": The **name** of the SDK or framework being described.
-    - "href": The **original URL** from which the content was scraped (provided as input so write it as it is).
-    - "base_url": The base url of the SDK or Framework whose href is scraped (provided as input so write it as it is).
+    - "source_url": The **original URL** from which the content was scraped (provided as input).
     - "sdk_framework": Binary classification:
       - **SDK** → If the document primarily discusses an SDK (e.g., Python SDK, Node.js SDK).
       - **Framework** → If the document primarily describes a development framework (e.g., TensorFlow, React, FastAPI).
@@ -77,8 +76,8 @@ json
     "chunked_data": "Extracted meaningful text chunk...",
     "metadata": {
       "SDK_Framework_name": "Gemini API",
-      "href": "https://ai.google.dev/gemini-api/docs/gemini-quickstart",
       "base_url": "https://ai.google.dev/gemini-api/docs",
+      "source_url": "https://ai.google.dev/gemini-api/gemini-quickstart",
       "sdk_framework": "SDK",
       "category": "AI",
       "has_code_snippet": true,
@@ -89,8 +88,8 @@ json
     "chunked_data": "Another meaningful text chunk...",
     "metadata": {
       "SDK_Framework_name": "Gemini API",
-      "href": "https://ai.google.dev/gemini-api/docs/python-client",
       "base_url": "https://ai.google.dev/gemini-api/docs",
+      "source_url": "https://ai.google.dev/gemini-api/docs",
       "sdk_framework": "SDK",
       "category": "AI",
       "has_code_snippet": false,
@@ -101,7 +100,6 @@ json
 
 ###Additional Notes:###
 - If the document contains multiple sections about different SDKs/Frameworks, ensure each section has its own relevant metadata.
-- 
 - Ignore unnecessary elements like menus, navigation links, and unrelated footnotes.
 - Code snippets should be preserved within their respective chunks.
 - If a version number is not explicitly mentioned, set "version": null.
@@ -133,8 +131,8 @@ Return only the top 4 URLs that best meet these criteria in a structured JSON li
 ##NOTE##:
 The Selected links should be capable to provide enough information to generate following data:
 {   
-  "base_url": "",
-	"href_urls": [],
+    "base_url": "",
+	"source_urls": [],
 	"sdk_framework": "",
 	"category": "",
 	"chunk_id": "",
@@ -142,8 +140,7 @@ The Selected links should be capable to provide enough information to generate f
 	"versions": []
 }
 - "SDK_Framework_name": The **name** of the SDK or framework being described.
-- "href_url": The **original URL** from which the content was scraped (provided as input write it as it is).
-- "base_url": The base url of the SDK or Framework whose href is scraped (provided as input so write it as it is).
+- "source_url": The **original URL** from which the content was scraped (provided as input).
 - "sdk_framework": Binary classification:
     - **SDK** → If the document primarily discusses an SDK (e.g., Python SDK, Node.js SDK).
     - **Framework** → If the document primarily describes a development framework (e.g., TensorFlow, React, FastAPI).
@@ -169,8 +166,7 @@ You are a text-processing AI that generates structured summaries from scraped te
 ### Metadata Extraction:
 Since the entire request belongs to the **same SDK or framework**, extract and include the following metadata **once per request**:
 
-- **"href_urls"**: A list of URLs from which the content was scraped. (provided as input so write it as it is).
-- "base_url": The base url of the SDK or Framework whose href is scraped (provided as input so write it as it is).
+- **"source_urls"**: A list of URLs from which the content was scraped.
 - **"sdk_framework"**: Specifies whether the document is about an **SDK** or a **Framework**.
 - **"category"**: The domain of the SDK or framework, selected from:
   - **AI**
@@ -191,14 +187,14 @@ Since the entire request belongs to the **same SDK or framework**, extract and i
     "chunked_data": "Gemini API provides powerful AI capabilities for text and image processing. It allows developers to integrate generative AI into applications with pre-trained models. The API supports multimodal inputs and has endpoints for text completion, image recognition, and structured data extraction. Designed for high performance and scalability, it is suitable for production-ready AI applications.",
     "metadata": {
     "base_url": https://ai.google.dev/gemini-api/docs",
-    "href_urls": [
+      "source_urls": [
         "https://ai.google.dev/gemini-api/docs",
         "https://ai.google.dev/gemini-api/gemini-quickstart",
-    ],
-    "sdk_framework": "SDK",
-    "category": "AI",
-    "supported_languages": ["Python", "JavaScript"],
-    "versions": ["1.2.0", "1.3.0"]
+      ],
+      "sdk_framework": "SDK",
+      "category": "AI",
+      "supported_languages": ["Python", "JavaScript"],
+      "versions": ["1.2.0", "1.3.0"]
     }
   }
 ]

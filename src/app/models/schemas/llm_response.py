@@ -10,7 +10,7 @@ class FilterPromptResponse(BaseModel):
 class ChunkMetadata(BaseModel):
     SDK_Framework_name: str
     base_url: HttpUrl
-    href: HttpUrl
+    source_url: HttpUrl
     sdk_framework: str
     category: str
     has_code_snippet: bool
@@ -28,7 +28,7 @@ class SummaryLinksResponse(BaseModel):
 
 class SummaryMetadata(BaseModel):
     base_url: HttpUrl
-    href_urls: List[HttpUrl]
+    source_urls: List[HttpUrl]
     sdk_framework: str
     category: str
     supported_languages: List[str]

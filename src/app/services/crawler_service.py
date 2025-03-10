@@ -75,7 +75,7 @@ class CrawlerService:
             {
                 "href": url,
                 "content": result.markdown.fit_markdown,
-                "base_url": home_url,
+                "source_url": home_url,
             }
         )
 

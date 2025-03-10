@@ -25,3 +25,5 @@ class ScrapeController:
         # return await self.scrape_usecase.crawler_usecase(user_id, urls)
         return await self.crawler_usecase.main(user_id=user_id, start_urls=urls)
         # return await self.chunking_usecase.execute_chunking(user_id)
+        await self.chunking_usecase.execute_chunking(user_id)
+        return await self.scrape_usecase.crawler_usecase(user_id, urls)
