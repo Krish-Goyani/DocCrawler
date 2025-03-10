@@ -42,18 +42,18 @@ class ApiService:
         :return: The HTTP response.
         """
         try:
-            timeout = httpx.Timeout(30.0)
+            timeout = httpx.Timeout(90.0)
             async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.post(url, headers=headers, json=data)
                 response.raise_for_status()
                 return response.json()
         except httpx.RequestError as exc:
-            error_msg = (
-                f"An error occurred while requesting {exc.request.url!r}."
-            )
-            raise JsonResponseError(status_code=500, detail=error_msg)
-        except httpx.HTTPStatusError as exc:
-            error_msg = f"Error response {exc.response.status_code} while requesting {exc.request.url!r}."
             raise JsonResponseError(
-                status_code=exc.response.status_code, detail=error_msg
+                status_code=500,
+                detail=f"OpenAI API request failed with error: {str(exc)}",
+            )
+        except httpx.HTTPStatusError as exc:
+            raise JsonResponseError(
+                status_code=500,
+                detail=f"OpenAI API request failed with error: {str(exc)}",
             )
