@@ -9,7 +9,7 @@ class OpenAIService:
     def __init__(self, api_service: ApiService = Depends()) -> None:
         self.api_service = api_service
         self.base_url = settings.OPENAI_URL
-        #self.endpoint = "chat/completions"
+        # self.endpoint = "chat/completions"
         self.openai_model = settings.OPENAI_MODEL
 
     async def completions(self, prompt: str, **params) -> dict:
