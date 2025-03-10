@@ -97,14 +97,6 @@ class EmbedUsecase:
                 if item["sparse_values"]:
                     total_sparse_embeddings += 1
 
-                # Print intermediate summary for every 1000 chunks
-                if self.embedded_count % 1000 == 0:
-                    print(
-                        f"\nProcessed {self.embedded_count}/{self.total_chunks} chunks. "
-                        f"\nDense embeddings: {total_dense_embeddings}, "
-                        f"\nSparse embeddings: {total_sparse_embeddings}"
-                    )
-
             # Print final summary
             print(
                 f"\nFinished processing {self.total_chunks} chunks. "
