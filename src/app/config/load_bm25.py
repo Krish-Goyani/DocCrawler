@@ -4,8 +4,9 @@ import pickle
 from fastapi import Depends
 from pinecone_text.sparse import BM25Encoder
 
-from src.app.repositories.error_repository import ErrorRepo
 from src.app.core.error_handler import JsonResponseError
+from src.app.repositories.error_repository import ErrorRepo
+
 
 class BM25Loader:
     def __init__(self, error_repo: ErrorRepo = Depends(ErrorRepo)) -> None:
@@ -37,4 +38,7 @@ class BM25Loader:
 
             return bm25
         except Exception as e:
-            raise JsonResponseError(status_code=500, detail=f"Error loading/creating BM25 model: {e}")
+            raise JsonResponseError(
+                status_code=500,
+                detail=f"Error loading/creating BM25 model: {e}",
+            )

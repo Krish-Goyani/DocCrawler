@@ -3,9 +3,9 @@ from typing import Any, Dict
 from fastapi import Depends
 
 from src.app.config.settings import settings
+from src.app.services.embed_service import EmbedService
 from src.app.services.jina_reranker_service import JinaRerankingService
 from src.app.services.pinecone_service import PineconeService
-from src.app.utils.embedding_utils import EmbeddingUtils
 
 
 class QueryUsecase:
@@ -13,11 +13,11 @@ class QueryUsecase:
         self,
         pinecone_service: PineconeService = Depends(),
         jina_reranker_service: JinaRerankingService = Depends(),
-        embedding_utils: EmbeddingUtils = Depends(),
+        embedding_service: EmbedService = Depends(),
     ):
         self.pinecone_service = pinecone_service
         self.reranker_service = jina_reranker_service
-        self.embedding_utils = embedding_utils
+        self.embedding_service = embedding_service
 
     async def execute(
         self,
@@ -29,9 +29,8 @@ class QueryUsecase:
         user_id: str = None,
     ):
 
-        # Change utils to service as soon aembedding service is completed
-        dense_vec = self.embedding_utils.get_embedding(query, user_id)
-        sparse_vec = self.embedding_utils.get_sparse_embedding(query, user_id)
+        dense_vec = self.embedding_service.get_dense_embedding(query, user_id)
+        sparse_vec = self.embedding_service.get_sparse_embedding(query, user_id)
 
         pinecone_indexes = await self.pinecone_service.list_pinecone_indexes()
         index_host = pinecone_indexes.get(settings.INDEX_NAME)

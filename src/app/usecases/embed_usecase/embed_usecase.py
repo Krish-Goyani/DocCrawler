@@ -2,16 +2,15 @@ import asyncio
 import concurrent.futures
 import json
 import os
-import traceback
 from typing import List
 
 from fastapi import Depends
 
 from src.app.config.settings import settings
+from src.app.core.error_handler import JsonResponseError
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
 from src.app.services.embed_service import EmbedService
-from src.app.utils.error_handler import JsonResponseError
 
 
 class EmbedUsecase:
@@ -157,10 +156,7 @@ class EmbedUsecase:
                     semaphore=semaphore,
                 )
 
-            print(f"Embedding process completed for user {user_id}")
         except Exception as e:
-            print("Exception occurred:", e)
-            print(traceback.format_exc())
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,

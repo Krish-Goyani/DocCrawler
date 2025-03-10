@@ -66,7 +66,9 @@ class ChunkingUtils:
         final_chunks = []
         for response in responses:
             if isinstance(response, Exception):
-                self.error_repo.add_error(str(response))
+                await self.error_repo.insert_error(
+                    Error(user_id=user_id, error_message=str(response))
+                )
             elif response is not None:
                 final_chunks.extend(response)
         return final_chunks

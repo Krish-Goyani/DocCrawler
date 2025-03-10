@@ -13,7 +13,7 @@ from src.app.core.error_handler import JsonResponseError
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
 from src.app.services.pinecone_service import PineconeService
-from src.app.utils.upsert_utils import PineconeUtils
+from src.app.usecases.upsert_usecase.helper import PineconeUtils
 
 
 class UpsertService:
