@@ -64,8 +64,8 @@ class PineconeUtils:
                         del metadata["versions"]
                     else:
                         metadata["versions"] = str(value)
-                else :
-                    del metadata['versions']
+                else:
+                    del metadata["versions"]
 
                 if "has_code_snippet" in metadata:
                     if metadata["has_code_snippet"]:
@@ -75,7 +75,10 @@ class PineconeUtils:
                     else:
                         del metadata["has_code_snippet"]
 
-                if "supported_languages" in metadata and metadata["supported_languages"]:
+                if (
+                    "supported_languages" in metadata
+                    and metadata["supported_languages"]
+                ):
                     if metadata["supported_languages"] in [None, [], "null"]:
                         del metadata["supported_languages"]
                 else:

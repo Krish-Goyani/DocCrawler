@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     PINECONE_API_VERSION: str
     PINECONE_CREATE_INDEX_URL: str
     PINECONE_UPSERT_URL: str
+    PINECONE_QUERY_URL: str
+    JINA_RERANKING_MODEL: str
+    JINA_RERANKING_URL: str
 
     class Config:
         env_file = "src/.env"

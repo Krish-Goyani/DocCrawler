@@ -15,6 +15,7 @@ class PineconeService:
         self.create_index_url = settings.PINECONE_CREATE_INDEX_URL
         self.list_index_url = settings.PINECONE_LIST_INDEX_URL
         self.upsert_url = settings.PINECONE_UPSERT_URL
+        self.query_url = settings.PINECONE_QUERY_URL
 
     async def list_pinecone_indexes(self):
         url = self.list_index_url
@@ -108,3 +109,65 @@ class PineconeService:
 
         except Exception as e:
             raise JsonResponseError(status_code=500, detail=str(e))
+
+    def _hybrid_scale(self, dense, sparse, alpha: float):
+
+        if alpha < 0 or alpha > 1:
+            raise ValueError("Alpha must be between 0 and 1")
+        # scale sparse and dense vectors to create hybrid search vecs
+        hsparse = {
+            "indices": sparse["indices"],
+            "values": [v * (1 - alpha) for v in sparse["values"]],
+        }
+        hdense = [v * alpha for v in dense]
+        return hdense, hsparse
+
+    async def pinecone_hybrid_query(
+        self,
+        index_host,
+        namespace,
+        top_k,
+        alpha: float,
+        query_vector_embeds: list,
+        query_sparse_embeds: dict,
+        include_metadata: bool,
+        filter_dict: dict = None,
+    ):
+
+        headers = {
+            "Api-Key": self.pinecone_api_key,
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-Pinecone-API-Version": self.api_version,
+        }
+
+        hdense, hsparse = self._hybrid_scale(
+            query_vector_embeds, query_sparse_embeds, alpha
+        )
+
+        data = {
+            "includeValues": False,
+            "includeMetadata": include_metadata,
+            "vector": hdense,
+            "sparseVector": {
+                "indices": hsparse.get("indices"),
+                "values": hsparse.get("values"),
+            },
+            "topK": top_k,
+            "namespace": namespace,
+        }
+
+        if filter_dict:
+            data["filter"] = filter_dict
+
+        url = self.query_url.format(index_host)
+        try:
+            response = await self.api_service.post(
+                url=url, headers=headers, data=data
+            )
+            return response
+
+        except Exception as e:
+            raise JsonResponseError(
+                status_code=500, detail=f"error while pinecone query {str(e)}"
+            )
