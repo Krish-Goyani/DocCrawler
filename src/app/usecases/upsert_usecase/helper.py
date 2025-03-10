@@ -58,12 +58,14 @@ class PineconeUtils:
                 # Extract metadata (without modifying it to include text)
                 metadata = chunk.get("metadata", {})
                 metadata["chunked_data"] = text
-                if "version" in metadata:
-                    value = metadata["version"]
+                if "versions" in metadata and metadata["versions"]:
+                    value = metadata["versions"]
                     if value in [None, [], "", "none", "null"]:
-                        del metadata["version"]
+                        del metadata["versions"]
                     else:
-                        metadata["version"] = str(value)
+                        metadata["versions"] = str(value)
+                else :
+                    del metadata['versions']
 
                 if "has_code_snippet" in metadata:
                     if metadata["has_code_snippet"]:
@@ -73,9 +75,11 @@ class PineconeUtils:
                     else:
                         del metadata["has_code_snippet"]
 
-                if "supported_languages" in metadata:
+                if "supported_languages" in metadata and metadata["supported_languages"]:
                     if metadata["supported_languages"] in [None, [], "null"]:
                         del metadata["supported_languages"]
+                else:
+                    del metadata["supported_languages"]
 
                 # Create a record in the format Pinecone expects
                 # Keep chunked_data as a separate field
