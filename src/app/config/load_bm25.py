@@ -1,6 +1,8 @@
 import os
 import pickle
+
 from pinecone_text.sparse import BM25Encoder
+
 
 class BM25Loader:
     CACHE_DIR = "cache"

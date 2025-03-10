@@ -1,15 +1,13 @@
-import os
-import pickle
 import types
 from typing import Dict, List, Optional
 
 from fastapi import Depends
 from fastembed import TextEmbedding
 
+from src.app.config.load_bm25 import BM25Loader
 from src.app.models.domain.error import Error
 from src.app.repositories.error_repository import ErrorRepo
 
-from src.app.config.load_bm25 import BM25Loader
 
 class EmbeddingUtils:
     def __init__(self, error_repo: ErrorRepo = Depends(ErrorRepo)) -> None:
