@@ -66,8 +66,8 @@ chunk_prompt = """
       - **Security**
       - **DevOps**
     - "has_code_snippet": True if the chunk contains a **code example**, otherwise False.
-    - "version": The **version** of the SDK or framework, if mentioned in the documentation content, href, base url.
-      - If **not explicitly available**, set it as null.
+    - "version": The **version** of the SDK or framework, for that analse the given documentation content, href , base url.
+      - If **not available**, set it as null.
 
     ### Expected Output Format (JSON List of Chunks):
     
@@ -158,7 +158,7 @@ Return only the top 4 URLs that best meet these criteria in a structured JSON li
 """
 
 summary_prompt = """
-You are a text-processing AI that generates structured summaries from scraped technical documentation while preserving key information. The input consists of raw text from a single SDK or framework documentation. Your task is to create **a concise, meaningful summary** that captures essential details about the SDK, framework, or technology described in the source content.
+You are a text-processing AI that generates structured summary from scraped technical documentation while preserving key information. The input consists of raw text from a single SDK or framework documentation. Your task is to create **a concise, meaningful summary** that captures essential details about the SDK, framework, or technology described in the source content.
 
 ### Summary Guidelines:
 - **Concise & Informative**: The summary should be **brief yet detailed**, covering key features, functionality, and purpose.
@@ -179,8 +179,8 @@ Since the entire request belongs to the **same SDK or framework**, extract and i
   - **Database**
   - **Security**
   - **DevOps**
-- **"supported_languages"**: List of programming languages supported by the SDK/framework (e.g., Python, JavaScript, Java). If not specified, set as an empty list.
-- **"versions"**: List of all versions mentioned in the documentation. If no version is found, set as an empty list.
+- **"supported_languages"**: List of programming languages supported by the SDK/framework analyse the whole content all the code snippets along with the additional code snippets than list out all the programming languages (e.g., Python, JavaScript, Java, curl, C# etc.). If not found, set as an empty list.
+- **"versions"**: List of all versions mentioned in the documentation content, hrefs, base urls. If no version is found, set as an empty list.
 
 ### **Expected Output Format (JSON Object for One SDK/Framework)**:
 

@@ -51,7 +51,10 @@ class ChunkingUseCase:
                         )
                     )
                     if summary_chunks:
+                        for summary_chunk in summary_chunks:
+                            summary_chunk["is_summary"] = "true"
                         all_chunks.extend(summary_chunks)
+                        
                 except Exception as e:
                     await self.error_repo.insert_error(
                         Error(
