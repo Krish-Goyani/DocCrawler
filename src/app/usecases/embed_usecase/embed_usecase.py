@@ -43,7 +43,7 @@ class EmbedUsecase:
             await self.error_repo.insert_error(
                 Error(
                     user_id=self.user_id,
-                    error_message=f"[ERROR] Failed to get embedding for text: {e}",
+                    error_message=f"[ERROR] Failed to get embedding for text: {e} \n error while generating embedding from text concurrently (from embed_usecase in get_embedding_concurrently())",
                 )
             )
             return None
@@ -119,7 +119,7 @@ class EmbedUsecase:
             await self.error_repo.insert_error(
                 Error(
                     user_id=self.user_id,
-                    error_message=f"[ERROR] Failed to process file {source_file}: {e}",
+                    error_message=f"[ERROR] Failed to process file {source_file}: {e} \n error while processing a file to generate embeddings (from embed_usecase in embed_process_file()).",
                 )
             )
 
@@ -160,7 +160,7 @@ class EmbedUsecase:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"[ERROR] Failed to process files for user {user_id}: {e}",
+                    error_message=f"[ERROR] Failed to process files for user {user_id}: {e} \n error while processing the all_chunks.json file for a user to generate embeddings (from embed_usecase in process_files())",
                 )
             )
 
@@ -192,10 +192,10 @@ class EmbedUsecase:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"[ERROR] Failed to process embeddings for user {user_id}: {e}",
+                    error_message=f"[ERROR] Failed to process embeddings for user {user_id}: {e} \n error from embed_usecase in (process_embeddings)",
                 )
             )
             raise JsonResponseError(
                 status_code=500,
-                detail=f"Error in processing embeddings: {str(e)}",
+                detail=f"Error in processing embeddings: {str(e)} \n error from embed_usecase in (process_embeddings)",
             )

@@ -36,7 +36,8 @@ class PineconeService:
             return index_dict
         except Exception as e:
             raise JsonResponseError(
-                status_code=500, detail=f"Error fetching indexes: {str(e)}"
+                status_code=500,
+                detail=f"Error fetching indexes: {str(e)} \n error from pinecone_service in list_pinecone_indexes()",
             )
 
     async def create_index(
@@ -64,7 +65,8 @@ class PineconeService:
 
         except Exception as e:
             raise JsonResponseError(
-                status_code=500, detail=f"Error creating index: {str(e)}"
+                status_code=500,
+                detail=f"Error creating index: {str(e)} \n error from pinecone_service in create_index()",
             )
 
         # Check the index readiness with at most 3 tries
@@ -86,7 +88,8 @@ class PineconeService:
 
         if not ready:
             raise JsonResponseError(
-                status_code=500, detail="Index creation timed out after 3 tries"
+                status_code=500,
+                detail="Index creation timed out after 3 tries \n error from pinecone_service in create_index()",
             )
 
         return response["host"]
@@ -108,7 +111,10 @@ class PineconeService:
             return response
 
         except Exception as e:
-            raise JsonResponseError(status_code=500, detail=str(e))
+            raise JsonResponseError(
+                status_code=500,
+                detail=f"Error while upserting vectors: {str(e)} \n error from pinecone_service in upsert_vectors()",
+            )
 
     def _hybrid_scale(self, dense, sparse, alpha: float):
 
@@ -167,5 +173,6 @@ class PineconeService:
 
         except Exception as e:
             raise JsonResponseError(
-                status_code=500, detail=f"error while pinecone query {str(e)}"
+                status_code=500,
+                detail=f"error while pinecone query {str(e)} \n error from pinecone_service in pinecone_hybrid_query()",
             )
