@@ -54,7 +54,7 @@ chunk_prompt = """
     - "SDK/Framework_name": The **name** of the SDK or framework being described make sure every chunks you create from the given documentation content should have the same name.
     - "href": The **original URL** from which the content was scraped (provided as input so write it as it is).
     - "base_url": The base url of the SDK or Framework whose href is scraped (provided as input so write it as it is).
-    - "sdk_framework": Strictly Binary classification and should be consistent across all chunks you made from the given documentation content:
+    - "sdk_framework": Strictly Binary classification only and should be consistent across all chunks you made from the given documentation content:
       - **SDK** → If the document primarily discusses an SDK (e.g., Python SDK, Node.js SDK).
       - **Framework** → If the document primarily describes a development framework (e.g., TensorFlow, React, FastAPI).
     - "category": The **domain** the SDK or framework belongs to. Choose from the following:
@@ -143,7 +143,7 @@ Return only the top 4 URLs that best meet these criteria in a structured JSON li
 - "SDK_Framework_name": The **name** of the SDK or framework being described.
 - "href_url": The **original URL** from which the content was scraped (provided as input write it as it is).
 - "base_url": The base url of the SDK or Framework whose href is scraped (provided as input so write it as it is).
-- "sdk_framework": Strictly Binary classification:
+- "sdk_framework": Strictly Binary classification only:
     - **SDK** → If the document primarily discusses an SDK (e.g., Python SDK, Node.js SDK).
     - **Framework** → If the document primarily describes a development framework (e.g., TensorFlow, React, FastAPI).
 - "category": The **domain** the SDK or framework belongs to. Choose from the following:
@@ -170,7 +170,7 @@ Since the entire request belongs to the **same SDK or framework**, extract and i
 
 - **"href_urls"**: A list of URLs from which the content was scraped. (provided as input so write it as it is).
 - "base_url": The base url of the SDK or Framework whose href is scraped (provided as input so write it as it is).
-- **"sdk_framework"**: Specifies whether the document is about an **SDK** or a **Framework**.
+- **"sdk_framework"**: Strictly binary classification Specifies whether the document is about an **SDK** or a **Framework** only.
 - **"category"**: The domain of the SDK or framework, selected from:
   - **AI**
   - **Cloud**

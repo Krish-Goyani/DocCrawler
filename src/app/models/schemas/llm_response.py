@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, HttpUrl
 
@@ -11,7 +11,7 @@ class ChunkMetadata(BaseModel):
     SDK_Framework_name: str
     base_url: HttpUrl
     href: HttpUrl
-    sdk_framework: str
+    sdk_framework: Literal["SDK", "Framework"]
     category: str
     has_code_snippet: bool
     version: Optional[str]
@@ -29,7 +29,7 @@ class SummaryLinksResponse(BaseModel):
 class SummaryMetadata(BaseModel):
     base_url: HttpUrl
     href_urls: List[HttpUrl]
-    sdk_framework: str
+    sdk_framework: Literal["SDK", "Framework"]
     category: str
     supported_languages: Optional[List[str]]
     versions: Optional[List[str]]
