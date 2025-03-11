@@ -37,7 +37,7 @@ class ChunkingUseCase:
             )
             if chunks:
                 all_chunks.extend(chunks)
-            all_chunks.extend(chunks)
+
             summary_chunks = await self.chunking_utils.process_summary_file(
                 user_id, file
             )

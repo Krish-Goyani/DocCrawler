@@ -31,8 +31,8 @@ class SummaryMetadata(BaseModel):
     href_urls: List[HttpUrl]
     sdk_framework: str
     category: str
-    supported_languages: List[str]
-    versions: List[str]
+    supported_languages: Optional[List[str]]
+    versions: Optional[List[str]]
 
 
 class SummaryData(BaseModel):

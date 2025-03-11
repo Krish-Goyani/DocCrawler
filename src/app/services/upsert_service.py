@@ -5,8 +5,6 @@ import time
 
 from fastapi import Depends
 
-from src.app.config.clients import Clients
-
 # from pinecone.grpc import PineconeGRPC as Pinecone
 from src.app.config.settings import settings
 from src.app.core.error_handler import JsonResponseError
@@ -19,12 +17,10 @@ from src.app.usecases.upsert_usecase.helper import PineconeUtils
 class UpsertService:
     def __init__(
         self,
-        pinecone_client=Depends(Clients),
         error_repo: ErrorRepo = Depends(ErrorRepo),
         pinecone_utils: PineconeUtils = Depends(PineconeUtils),
         pinecone_service: PineconeService = Depends(),
     ):
-        self.client = pinecone_client.get_pinecone_client()
         self.index_name = settings.INDEX_NAME
         self.error_repo = error_repo
         self.pinecone_utils = pinecone_utils
