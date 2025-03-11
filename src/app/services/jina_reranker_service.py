@@ -37,5 +37,5 @@ class JinaRerankingService:
         except Exception as e:
             raise JsonResponseError(
                 status_code=500,
-                detail=f"error while reranking documents {str(e)}",
+                detail=f"error while reranking documents {str(e)} \n error from jina_reranker_service in rerank_documents()",
             )

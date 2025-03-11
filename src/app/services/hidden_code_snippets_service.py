@@ -58,7 +58,7 @@ class HiddenCodeSnippetsService:
             await self.error_repo.insert_error(
                 Error(
                     user_id=self.user_id,
-                    error_message=f"Skipping interactive element due to error: {e}",
+                    error_message=f"Skipping interactive element due to error: {e} \n error while clicking (from hidden_code_snippits_service in handle_element_and_extract())",
                 )
             )
             # print(f"Skipping interactive element due to error: {e}")
@@ -141,7 +141,7 @@ class HiddenCodeSnippetsService:
                 await self.error_repo.insert_error(
                     Error(
                         user_id=self.user_id,
-                        error_message=f"Error with selector {selector}: {e}",
+                        error_message=f"Error with selector {selector}: {e} \n error while extracting hidden code snippits (from hidden_code_snippits_service in extract_hidden_snippets())",
                     )
                 )
                 # print(f"Error with selector {selector}: {e}")
@@ -165,7 +165,7 @@ class HiddenCodeSnippetsService:
                 await self.error_repo.insert_error(
                     Error(
                         user_id=self.user_id,
-                        error_message=f"Skipping hidden element: {e}",
+                        error_message=f"Skipping hidden element: {e} \n error while extracting hidden code snippits (from hidden_code_snippits_service in extract_hidden_snippets())",
                     )
                 )
                 # print(f"Skipping hidden element: {e}")

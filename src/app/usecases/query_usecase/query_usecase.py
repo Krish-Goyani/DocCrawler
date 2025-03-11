@@ -29,8 +29,12 @@ class QueryUsecase:
         user_id: str = None,
     ):
 
-        dense_vec = await self.embedding_service.get_dense_embedding(query, user_id)
-        sparse_vec = await self.embedding_service.get_sparse_embedding(query, user_id)
+        dense_vec = await self.embedding_service.get_dense_embedding(
+            query, user_id
+        )
+        sparse_vec = await self.embedding_service.get_sparse_embedding(
+            query, user_id
+        )
 
         pinecone_indexes = await self.pinecone_service.list_pinecone_indexes()
         index_host = pinecone_indexes.get(settings.INDEX_NAME)

@@ -26,7 +26,7 @@ class ApiService:
             )
             raise JsonResponseError(status_code=500, detail=error_msg)
         except httpx.HTTPStatusError as exc:
-            error_msg = f"Error response {exc.response.status_code} while requesting {exc.request.url!r}."
+            error_msg = f"Error response {exc.response.status_code} while requesting {exc.request.url!r}. \n error from api_service in get()"
             raise JsonResponseError(
                 status_code=exc.response.status_code, detail=error_msg
             )
@@ -50,15 +50,15 @@ class ApiService:
         except httpx.RequestError as exc:
             raise JsonResponseError(
                 status_code=500,
-                detail=f"API request failed with error: {str(exc)}",
+                detail=f"API request failed with error: {str(exc)} \n error from api_service in post()",
             )
         except httpx.HTTPStatusError as exc:
             raise JsonResponseError(
                 status_code=500,
-                detail=f"API request failed with error: {str(exc)}",
+                detail=f"API request failed with error: {str(exc)} \n error from api_service in post()",
             )
         except Exception as exc:
             raise JsonResponseError(
                 status_code=500,
-                detail=f"API request failed with error: {str(exc)}",
+                detail=f"API request failed with error: {str(exc)} \n error from api_service in post()",
             )
