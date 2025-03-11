@@ -54,11 +54,11 @@ class ChunkingUseCase:
                         for summary_chunk in summary_chunks:
                             summary_chunk["is_summary"] = "true"
                         all_chunks.extend(summary_chunks)
-                        
+
                 except Exception as e:
                     await self.error_repo.insert_error(
                         Error(
-                            user_id= user_id,
+                            user_id=user_id,
                             error_message=f"[ERROR] occured while processing file in chunking  : {e} \n error from chunking_usecase in executing_chunking()",
                         )
                     )
