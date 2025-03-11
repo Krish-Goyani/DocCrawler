@@ -40,5 +40,5 @@ class BM25Loader:
         except Exception as e:
             raise JsonResponseError(
                 status_code=500,
-                detail=f"Error loading/creating BM25 model: {e}",
+                detail=f"Error loading/creating BM25 model: {e} \n error from load_bm25 in load_or_create_bm25()",
             )

@@ -44,4 +44,7 @@ class OpenAIService:
             )
             return response
         except Exception as e:
-            raise JsonResponseError(status_code=500, detail=str(e))
+            raise JsonResponseError(
+                status_code=500,
+                detail=f"Error while sending a POST request to the OpenAI API: {str(e)} \n error from openai_service in completions()",
+            )

@@ -30,11 +30,12 @@ class UpsertUseCase:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"File not found: {file_path}",
+                    error_message=f"File not found: {file_path} \n error while uploading vectors (from upsert_usecase in upload_vectors)",
                 )
             )
             raise JsonResponseError(
-                status_code=404, detail=f"File not found: {file_path}"
+                status_code=404,
+                detail=f"File not found: {file_path} \n error while uploading vectors (from upsert_usecase in upload_vectors)",
             )
         return await self.upsert_service.upload_vectors(
             user_id=user_id, file_path=file_path

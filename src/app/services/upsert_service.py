@@ -38,11 +38,12 @@ class UpsertService:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message="No data found to upsert.",
+                    error_message="No data found to upsert. \n error while uploading vectors (from upsert_service in upload_vectors.)",
                 )
             )
             raise JsonResponseError(
-                status_code=400, detail="No data found to upsert."
+                status_code=400,
+                detail="No data found to upsert. \n error while uploading vectors (from upsert_service in upload_vectors.)",
             )
 
         DIMENSION = len(vector_data[0]["values"])
@@ -82,11 +83,12 @@ class UpsertService:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"Error in upserting: {str(e)}",
+                    error_message=f"Error in upserting: {str(e)} \n error while uploading vectors (from upsert_service in upload_vectors)",
                 )
             )
             raise JsonResponseError(
-                status_code=500, detail=f"Error in upserting: {str(e)}"
+                status_code=500,
+                detail=f"Error in upserting: {str(e)} \n error while uploading vectors (from upsert_service in upload_vectors)",
             )
 
         # Delete the user_id folder
@@ -96,7 +98,7 @@ class UpsertService:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"Failed to delete folder: {user_id}. Error: {str(e)}",
+                    error_message=f"Failed to delete folder: {user_id}. Error: {str(e)} \n error from upsert_service in upload_vectors)",
                 )
             )
 

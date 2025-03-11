@@ -143,12 +143,12 @@ class PineconeUtils:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"Error in records generation: {str(e)}",
+                    error_message=f"Error in records generation: {str(e)} \n error from upsert_usecase/helper in load_json_files_for_pinecone()",
                 )
             )
             raise JsonResponseError(
                 status_code=500,
-                detail=f"Error in processing {file_path}: {str(e)}",
+                detail=f"Error in processing {file_path}: {str(e)} \n error from upsert_usecase/helper in load_json_files_for_pinecone()",
             )
 
         return pinecone_records

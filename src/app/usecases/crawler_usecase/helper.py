@@ -57,7 +57,7 @@ class CrawlerUtils:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"[ERROR] Failed to get title for {base_url} and the user id is : {e}",
+                    error_message=f"[ERROR] Failed to get title for {base_url} and the user id is : {e} \n error from crawler_usecase/helper.py in get_file_name()",
                 )
             )
             return urlparse(base_url).netloc.replace(".", "_")
@@ -85,7 +85,7 @@ class CrawlerUtils:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"[ERROR] Failed to clean GPT output for {response_text} and the user id is : {user_id}",
+                    error_message=f"[ERROR] Failed to clean GPT output for {response_text} and the user id is : {user_id} \n error from crawler_usecase/helper.py in clean_gpt_output()",
                 )
             )
             return []
@@ -208,7 +208,7 @@ class CrawlerUtils:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"[ERROR] Failed to fetch sitemap for {url}: {e}",
+                    error_message=f"[ERROR] Failed to fetch sitemap for {url}: {e} \n error from crawler_usecase/helper.py in fetch_sitemap()",
                 )
             )
             return []
@@ -261,7 +261,7 @@ class CrawlerUtils:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"[ERROR] LLM call failed: {e}",
+                    error_message=f"[ERROR] LLM call failed: {e} \n error while filtering links through gpt (from crawler_usecase/helper.py in filter_links_gpt)",
                 )
             )
             # Release the counter if the call failed

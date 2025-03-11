@@ -51,7 +51,7 @@ class CrawlerUsecase:
                 await self.error_repo.insert_error(
                     Error(
                         user_id=self.user_id,
-                        error_message=f"[WORKER ERROR] In Code snippets Worker : {e}",
+                        error_message=f"[WORKER ERROR] In Code snippets Worker : {e} \n error from crawler_usecase in worker_for_code_snippets()",
                     )
                 )
             finally:
@@ -95,7 +95,7 @@ class CrawlerUsecase:
                 await self.error_repo.insert_error(
                     Error(
                         user_id=self.user_id,
-                        error_message=f"[WORKER ERROR] Worker {worker_id}: {e}",
+                        error_message=f"[WORKER ERROR] Worker {worker_id}: {e} \n error from crawler_usecase in worker_for_full_page()",
                     )
                 )
             finally:
@@ -103,54 +103,78 @@ class CrawlerUsecase:
 
     async def main(self, user_id: str, start_urls: List[str]):
         self.user_id = user_id
-
-        file_name_tasks = [
-            self.crawler_utils.get_file_name(url, self.user_id)
-            for url in start_urls
-        ]
-        self.state.file_names = await asyncio.gather(*file_name_tasks)
-
-        async with async_playwright() as playwright:
-            browser = await playwright.chromium.launch(headless=True)
-            for i, url in enumerate(start_urls):
-                file_name = self.state.file_names[i]
-                self.state.count_locks[file_name] = asyncio.Lock()
-                self.state.results[file_name] = []
-                self.state.llm_request_counts[file_name] = 0
-
-                sitemap_urls = await self.crawler_utils.fetch_sitemap(
-                    url, self.user_id
-                )
-                if sitemap_urls:
-                    for sitemap_url in sitemap_urls:
-                        await self.state.queue.put(
-                            (sitemap_url, 1, file_name, url, True)
-                        )
-                    print(f"Using sitemap for base URL: {url} -> {file_name}")
-                else:
-                    self.state.processed_urls.add(url)
-                    await self.state.queue.put((url, 1, file_name, url, False))
-                    print(f"Starting with base URL: {url} -> {file_name}")
-
-            tasks = [
-                asyncio.create_task(self.worker_for_full_page(i))
-                for i in range(self.num_workers)
+        try:
+            file_name_tasks = [
+                self.crawler_utils.get_file_name(url, self.user_id)
+                for url in start_urls
             ]
-            await self.state.queue.join()
-            for task in tasks:
-                task.cancel()
+            self.state.file_names = await asyncio.gather(*file_name_tasks)
 
-            await self.code_snippets_crawler(num_workers=15, browser=browser)
-            await self.crawler_utils.save_results(
-                self.state.results, self.user_id
-            )
-            await asyncio.gather(*tasks, return_exceptions=True)
-            await browser.close()
+            async with async_playwright() as playwright:
+                browser = await playwright.chromium.launch(headless=True)
+                for i, url in enumerate(start_urls):
+                    file_name = self.state.file_names[i]
+                    self.state.count_locks[file_name] = asyncio.Lock()
+                    self.state.results[file_name] = []
+                    self.state.llm_request_counts[file_name] = 0
 
-            print("\n--- CRAWL SUMMARY ---")
-            for file_name, count in self.state.llm_request_counts.items():
-                print(
-                    f"{file_name}: {count}/{self.state.max_llm_request_count} LLM calls, {len(self.state.results.get(file_name, []))} pages crawled"
+                    try:
+                        sitemap_urls = await self.crawler_utils.fetch_sitemap(
+                            url, self.user_id
+                        )
+                        if sitemap_urls:
+                            for sitemap_url in sitemap_urls:
+                                await self.state.queue.put(
+                                    (sitemap_url, 1, file_name, url, True)
+                                )
+                            print(
+                                f"Using sitemap for base URL: {url} -> {file_name}"
+                            )
+                        else:
+                            self.state.processed_urls.add(url)
+                            await self.state.queue.put(
+                                (url, 1, file_name, url, False)
+                            )
+                            print(
+                                f"Starting with base URL: {url} -> {file_name}"
+                            )
+                    except Exception as e:
+                        await self.error_repo.insert_error(
+                            Error(
+                                user_id=self.user_id,
+                                error_message=f"[ERROR] proccessing url {url} : {e} \n error from crawler_usecase in main()",
+                            )
+                        )
+
+                tasks = [
+                    asyncio.create_task(self.worker_for_full_page(i))
+                    for i in range(self.num_workers)
+                ]
+                await self.state.queue.join()
+                for task in tasks:
+                    task.cancel()
+
+                await self.code_snippets_crawler(
+                    num_workers=15, browser=browser
                 )
+                await self.crawler_utils.save_results(
+                    self.state.results, self.user_id
+                )
+                await asyncio.gather(*tasks, return_exceptions=True)
+                await browser.close()
 
-        return self.user_id
+                print("\n--- CRAWL SUMMARY ---")
+                for file_name, count in self.state.llm_request_counts.items():
+                    print(
+                        f"{file_name}: {count}/{self.state.max_llm_request_count} LLM calls, {len(self.state.results.get(file_name, []))} pages crawled"
+                    )
+
+        except Exception as e:
+            await self.error_repo.insert_error(
+                Error(
+                    user_id=self.user_id,
+                    error_message=f"[ERROR] occured in main function : {e} \n error from crawler_usecase in main()",
+                )
+            )
+        finally:
+            return self.user_id

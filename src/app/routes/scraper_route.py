@@ -19,4 +19,4 @@ async def scrape_docs(
         return response
     except Exception as e:
         print(e)
-        return {"error": str(e)}
+        return {"error from scrape route file": str(e)}
