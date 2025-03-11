@@ -4,6 +4,14 @@ from src.app.core.error_handler import JsonResponseError
 
 
 class ApiService:
+    def __init__(self) -> None:
+        self.timeout = httpx.Timeout(
+            connect=60.0,  # Time to establish a connection
+            read=150.0,  # Time to read the response
+            write=150.0,  # Time to send data
+            pool=60.0,  # Time to wait for a connection from the pool
+        )
+
     async def get(
         self, url: str, headers: dict = None, data: dict = None
     ) -> httpx.Response:
@@ -15,8 +23,8 @@ class ApiService:
         :return: The HTTP response.
         """
         try:
-            timeout = httpx.Timeout(30.0)
-            async with httpx.AsyncClient(timeout=timeout) as client:
+
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(url, headers=headers, params=data)
                 response.raise_for_status()
                 return response.json()
@@ -42,8 +50,7 @@ class ApiService:
         :return: The HTTP response.
         """
         try:
-            timeout = httpx.Timeout(90.0)
-            async with httpx.AsyncClient(timeout=timeout) as client:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(url, headers=headers, json=data)
                 response.raise_for_status()
                 return response.json()

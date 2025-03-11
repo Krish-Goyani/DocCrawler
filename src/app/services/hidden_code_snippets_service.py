@@ -155,11 +155,6 @@ class HiddenCodeSnippetsService:
                 await page.evaluate(
                     "el => el.style.display = 'block'", element
                 )  # Force show hidden elements
-                # where is this text used?
-                #
-                #
-                #
-                #
                 text = await element.inner_text()
             except Exception as e:
                 await self.error_repo.insert_error(

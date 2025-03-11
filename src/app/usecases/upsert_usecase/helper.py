@@ -44,7 +44,7 @@ class PineconeUtils:
                     await self.error_repo.insert_error(
                         Error(
                             user_id=user_id,
-                            error_message=f"Skipping chunk from {file_name} due to missing or empty embedding.",
+                            error_message=f"Skipping chunk from {file_path} due to missing or empty embedding.",
                         )
                     )
                     continue
@@ -66,7 +66,7 @@ class PineconeUtils:
                         except Exception as e:
                             pass
                     else:
-                        metadata["versions"] = str(value)
+                        metadata["versions"] = str(value).lower()
                 else:
                     try:
                         del metadata["versions"]
@@ -81,7 +81,7 @@ class PineconeUtils:
                         except Exception as e:
                             pass
                     else:
-                        metadata["version"] = str(value)
+                        metadata["version"] = str(value).lower()
                 else:
                     try:
                         del metadata["version"]
@@ -92,7 +92,7 @@ class PineconeUtils:
                     if metadata["has_code_snippet"]:
                         metadata["has_code_snippet"] = str(
                             metadata["has_code_snippet"]
-                        )
+                        ).lower()
                     else:
                         try:
                             del metadata["has_code_snippet"]
@@ -108,11 +108,25 @@ class PineconeUtils:
                             del metadata["supported_languages"]
                         except Exception as e:
                             pass
+                    else:
+                        metadata["supported_languages"] = str(
+                            metadata["supported_languages"]
+                        ).lower()
                 else:
                     try:
                         del metadata["supported_languages"]
                     except Exception as e:
                         pass
+                try:
+                    metadata["SDK_Framework_name"] = str(
+                        metadata["SDK_Framework_name"]
+                    ).lower()
+                    metadata["category"] = str(metadata["category"]).lower()
+                    metadata["sdk_framework"] = str(
+                        metadata["sdk_framework"]
+                    ).lower()
+                except Exception as e:
+                    pass
 
                 # Create a record in the format Pinecone expects
                 # Keep chunked_data as a separate field

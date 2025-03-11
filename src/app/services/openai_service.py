@@ -20,7 +20,7 @@ class OpenAIService:
         :param params: The optional parameters.
         :return: The completions for the given prompt.
         """
-        url = f"{self.base_url}"
+        url = self.base_url
 
         headers = {
             "Content-Type": "application/json",
@@ -40,7 +40,7 @@ class OpenAIService:
         }
         try:
             response = await self.api_service.post(
-                url, headers=headers, data=payload
+                url=self.base_url, headers=headers, data=payload
             )
             return response
         except Exception as e:

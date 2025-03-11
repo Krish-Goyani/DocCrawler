@@ -45,18 +45,20 @@ class ChunkingUseCase:
                     )
                     if chunks:
                         all_chunks.extend(chunks)
-                    all_chunks.extend(chunks)
                     summary_chunks = (
                         await self.chunking_utils.process_summary_file(
                             user_id, file
                         )
                     )
                     if summary_chunks:
+                        for summary_chunk in summary_chunks:
+                            summary_chunk["is_summary"] = "true"
                         all_chunks.extend(summary_chunks)
+
                 except Exception as e:
                     await self.error_repo.insert_error(
                         Error(
-                            user_id=self.user_id,
+                            user_id=user_id,
                             error_message=f"[ERROR] occured while processing file in chunking  : {e} \n error from chunking_usecase in executing_chunking()",
                         )
                     )
@@ -69,14 +71,14 @@ class ChunkingUseCase:
             except Exception as e:
                 await self.error_repo.insert_error(
                     Error(
-                        user_id=self.user_id,
+                        user_id=user_id,
                         error_message=f"[ERROR] occured while saving chunks to file : {e} \n error from chunking_usecase in executing_chunking()",
                     )
                 )
         except Exception as e:
             await self.error_repo.insert_error(
                 Error(
-                    user_id=self.user_id,
+                    user_id=user_id,
                     error_message=f"[ERROR] occured while executing chunks : {e} \n error from chunking_usecase in executing_chunking()",
                 )
             )

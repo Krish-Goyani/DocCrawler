@@ -168,6 +168,7 @@ class ChunkingUtils:
         filtered_links = await self._filter_summary_links(
             user_id, f"{summary_links_prompt}\n**INPUT:**\n{links}\n**OUTPUT:**"
         )
+
         content_data = await self._fetch_content(user_id, data, filtered_links)
         responses = await self._generate_summary_chunk(
             user_id,
@@ -199,13 +200,12 @@ class ChunkingUtils:
 
     async def _fetch_content(self, user_id, json_data, hrefs):
         try:
-            content_dict = {}
+            content = []
             for entry in json_data:
                 href = entry.get("href", "")
                 if href in hrefs:
-                    content = entry.get("content", "")
-                    content_dict[href] = content
-            return content_dict
+                    content.append(entry)
+            return content
         except Exception as e:
             error = Error(
                 user_id=user_id,
@@ -245,12 +245,12 @@ class ChunkingUtils:
             return
 
         self.chunk_llm_request_count += 1
-        usage = getattr(response, "usage", None)
+        usage = response.get("usage", None)
         if not usage:
             return
 
-        input_tokens = usage.prompt_tokens
-        output_tokens = usage.completion_tokens
+        input_tokens = usage["prompt_tokens"]
+        output_tokens = usage["completion_tokens"]
         self.chunk_total_input_tokens += input_tokens
         self.chunk_total_output_tokens += output_tokens
 
@@ -267,7 +267,7 @@ class ChunkingUtils:
 
         await self.llm_usage_repo.save_usage(log_data)
 
-        output_text = response.choices[0].message.content.strip()
+        output_text = response["choices"][0]["message"]["content"].strip()
         filtered_links = await self.extract_json_list(user_id, output_text)
 
         if filtered_links:
@@ -314,12 +314,12 @@ class ChunkingUtils:
             return
 
         self.chunk_llm_request_count += 1
-        usage = getattr(response, "usage", None)
+        usage = response.get("usage", None)
         if not usage:
             return
 
-        input_tokens = usage.prompt_tokens
-        output_tokens = usage.completion_tokens
+        input_tokens = usage["prompt_tokens"]
+        output_tokens = usage["completion_tokens"]
         self.chunk_total_input_tokens += input_tokens
         self.chunk_total_output_tokens += output_tokens
 
@@ -335,7 +335,7 @@ class ChunkingUtils:
         )
 
         await self.llm_usage_repo.save_usage(log_data)
-        output_text = response.choices[0].message.content.strip()
+        output_text = response["choices"][0]["message"]["content"].strip()
         chunks = await self.extract_json_list(user_id, output_text)
         if chunks:
             try:
