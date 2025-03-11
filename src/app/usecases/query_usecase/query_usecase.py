@@ -29,33 +29,34 @@ class QueryUsecase:
         user_id: str = None,
     ):
 
-        dense_vec = self.embedding_service.get_dense_embedding(query, user_id)
-        sparse_vec = self.embedding_service.get_sparse_embedding(query, user_id)
+        dense_vec = await self.embedding_service.get_dense_embedding(query, user_id)
+        sparse_vec = await self.embedding_service.get_sparse_embedding(query, user_id)
 
         pinecone_indexes = await self.pinecone_service.list_pinecone_indexes()
         index_host = pinecone_indexes.get(settings.INDEX_NAME)
 
         transformed_filters = {}
 
-        for key, value in filters.items():
-            if isinstance(value, str):
-                transformed_filters[key] = {"$in": [value]}
-            elif isinstance(value, list):
-                transformed_filters[key] = {
-                    "$in": value
-                }  # Keep lists as they are
-            elif isinstance(value, bool):
-                transformed_filters[key] = {
-                    "$eq": value
-                }  # Handle booleans correctly
-            elif value is None:
-                transformed_filters[key] = {
-                    "$exists": False
-                }  # Handle None values
-            else:
-                transformed_filters[key] = (
-                    value  # Keep other values as they are
-                )
+        if filters:
+            for key, value in filters.items():
+                if isinstance(value, str):
+                    transformed_filters[key] = {"$in": [value]}
+                elif isinstance(value, list):
+                    transformed_filters[key] = {
+                        "$in": value
+                    }  # Keep lists as they are
+                elif isinstance(value, bool):
+                    transformed_filters[key] = {
+                        "$eq": value
+                    }  # Handle booleans correctly
+                elif value is None:
+                    transformed_filters[key] = {
+                        "$exists": False
+                    }  # Handle None values
+                else:
+                    transformed_filters[key] = (
+                        value  # Keep other values as they are
+                    )
 
         retrieved_vectors = await self.pinecone_service.pinecone_hybrid_query(
             index_host,
