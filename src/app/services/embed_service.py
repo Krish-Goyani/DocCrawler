@@ -47,7 +47,7 @@ class EmbedService:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"[ERROR] Failed to generate sparse embedding: {e}",
+                    error_message=f"[ERROR] Failed to generate sparse embedding: {e} \n error from embed_service in get_sparse_embedding()",
                 )
             )
             return {"indices": [], "values": []}
@@ -87,7 +87,7 @@ class EmbedService:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"[ERROR] Failed to generate dense embedding: {e}",
+                    error_message=f"[ERROR] Failed to generate dense embedding: {e} \n error from embed_service in get_dense_embedding()",
                 )
             )
-            return None
+            return

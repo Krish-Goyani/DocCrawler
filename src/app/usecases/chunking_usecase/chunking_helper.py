@@ -17,12 +17,12 @@ from src.app.models.schemas.llm_response import (
 from src.app.repositories.error_repository import ErrorRepo
 from src.app.repositories.llm_usage_repository import LLMUsageRepository
 from src.app.services.openai_service import OpenAIService
+from src.app.utils.batch_api_utils import BatchAPIUtils
 from src.app.utils.prompts import (
     chunk_prompt,
     summary_links_prompt,
     summary_prompt,
 )
-from src.app.utils.batch_api_utils import BatchAPIUtils
 
 
 class ChunkingUtils:
@@ -31,7 +31,7 @@ class ChunkingUtils:
         error_repo: ErrorRepo = Depends(),
         llm_usage_repo: LLMUsageRepository = Depends(),
         openai_service: OpenAIService = Depends(),
-        batch_api_utils: BatchAPIUtils = Depends()
+        batch_api_utils: BatchAPIUtils = Depends(),
     ) -> None:
         self.error_repo = error_repo
         self.llm_usage_repo = llm_usage_repo
@@ -43,9 +43,9 @@ class ChunkingUtils:
         self.chunk_prompt = chunk_prompt
         self.summary_prompt = summary_prompt
         self.batch_api_utils = batch_api_utils
-        
-    async def call_batches_api(self, json_files ,user_id):
-        
+
+    async def call_batches_api(self, json_files, user_id):
+
         # 1. Create jsonl file
         processed_files = set()
 
@@ -56,30 +56,30 @@ class ChunkingUtils:
             processed_files.add(jsonl_file)  # Mark file as processed
 
         processed_files = list(processed_files)
-        
+
         # 2. Upload jsonl file
         upload_tasks = [
             self.openai_service.upload_jsonl_file(jsonl_file, purpose="batch")
             for jsonl_file in processed_files
         ]
         file_ids = await asyncio.gather(*upload_tasks, return_exceptions=True)
-            
+
         # 3. Create batch requests asynchronously
         tasks = [
             self.openai_service.create_batch_request(file_id)
             for file_id in file_ids
         ]
         batch_request_ids = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # 4. Check status of batch + retrieve file content
-        content = await self._check_batch_status(batch_request_ids,user_id)
-        
+        content = await self._check_batch_status(batch_request_ids, user_id)
+
         return content
-        
+
     async def _check_batch_status(self, batch_request_ids, user_id):
         responses = []
         pending_batches = set(batch_request_ids)
-        
+
         for _ in range(24):  # 24 iterations (24 hours)
             print("Checking status...")
             for batch_id in list(pending_batches):
@@ -87,36 +87,48 @@ class ChunkingUtils:
                 print(result["status"])
                 if result["status"] == "completed":
                     print(f"Batch {batch_id} completed! Downloading results...")
-                    content = await self.openai_service.retrieve_file_content(result["output_file_id"])
-                    
+                    content = await self.openai_service.retrieve_file_content(
+                        result["output_file_id"]
+                    )
+
                     parsed_data = []
 
                     # Ensure content is a string
                     if isinstance(content, str):
-                        for line in content.strip().split("\n"): 
+                        for line in content.strip().split("\n"):
                             if line.strip():
                                 parsed_data.append(json.loads(line))
                     else:
-                        parsed_data = [content] if isinstance(content, dict) else content  # Use directly if already parsed
-                    
+                        parsed_data = (
+                            [content] if isinstance(content, dict) else content
+                        )  # Use directly if already parsed
+
                     extracted_responses = []
 
                     # Extract choices from parsed data
-                    for entry in parsed_data:  
+                    for entry in parsed_data:
                         if isinstance(entry, dict) and "response" in entry:
                             response = entry["response"]
                             if "body" in response:
                                 body = response["body"]
-                                choices = body.get("choices", [])  
+                                choices = body.get("choices", [])
                                 if choices:
-                                    content_text = choices[0]["message"]["content"]
-                                    
+                                    content_text = choices[0]["message"][
+                                        "content"
+                                    ]
+
                                     # Call extract_json_list to format JSON response if applicable
-                                    formatted_response = await self.extract_json_list(user_id, content_text)
-                                    
+                                    formatted_response = (
+                                        await self.extract_json_list(
+                                            user_id, content_text
+                                        )
+                                    )
+
                                     if formatted_response:
-                                        extracted_responses.append(formatted_response)  # Store formatted JSON
-                                        
+                                        extracted_responses.append(
+                                            formatted_response
+                                        )  # Store formatted JSON
+
                                 usage = body["usage"]
                                 if not usage:
                                     return
@@ -140,7 +152,7 @@ class ChunkingUtils:
                                 await self.llm_usage_repo.save_usage(log_data)
 
                     responses.extend(extracted_responses)
-                    pending_batches.remove(batch_id) 
+                    pending_batches.remove(batch_id)
 
                 elif result["status"] == "failed":
                     print(f"Batch {batch_id} failed")
@@ -149,7 +161,7 @@ class ChunkingUtils:
             await asyncio.sleep(3600)  # Sleep for 1 hour
 
         return responses
-        
+
     async def process_file(self, user_id: str, file_path, semaphore):
         """
         Process the file and chunk the data.
@@ -176,7 +188,10 @@ class ChunkingUtils:
         for response in responses:
             if isinstance(response, Exception):
                 await self.error_repo.insert_error(
-                    Error(user_id=user_id, error_message=str(response))
+                    Error(
+                        user_id=user_id,
+                        error_message=f"Error while processing file for chuning: {str(response)} \n error from chunking_helper in process_file()",
+                    )
                 )
             elif response is not None:
                 final_chunks.extend(response)
@@ -198,20 +213,32 @@ class ChunkingUtils:
                         prompt=text, temperature=0
                     )
                 except asyncio.TimeoutError:
-                    return None
+                    await self.error_repo.insert_error(
+                        Error(
+                            user_id=user_id,
+                            error_message=f"[ERROR] Request timed out \n error from chunking helper in _chunk_with_gpt()",
+                        )
+                    )
+                    return
                 except Exception as e:
-                    error = Error(user_id=user_id, error_message=str(e))
+                    error = Error(
+                        user_id=user_id,
+                        error_message=f"Error during GPT request: {str(e)} \n error from chunking helper in _chunk_with_gpt()",
+                    )
                     await self.error_repo.insert_error(error)
-                    return None
+                    return
                 end_time = time.time()
             except openai.OpenAIError as e:
-                error = Error(user_id=user_id, error_message=str(e))
+                error = Error(
+                    user_id=user_id,
+                    error_message=f"OpenAI error: {str(e)} \n error from chunking helper in _chunk_with_gpt()",
+                )
                 await self.error_repo.insert_error(error)
-                return None
+                return
             self.chunk_llm_request_count += 1
             usage = response.get("usage", None)
             if not usage:
-                return None
+                return
             input_tokens = usage["prompt_tokens"]
             output_tokens = usage["completion_tokens"]
             self.chunk_total_input_tokens += input_tokens
@@ -239,10 +266,13 @@ class ChunkingUtils:
                         ChunkedData(**chunk)
                     return chunks
                 except Exception as e:
-                    error = Error(user_id=user_id, error_message=str(e))
+                    error = Error(
+                        user_id=user_id,
+                        error_message=f"[ERROR] Invalid chunk data: {str(e)} \n error from chunking helper in _chunk_with_gpt()",
+                    )
                     await self.error_repo.insert_error(error)
-                    return None
-            return None
+                    return
+            return
 
     async def process_summary_file(self, user_id, file_path):
         """
@@ -259,6 +289,7 @@ class ChunkingUtils:
         filtered_links = await self._filter_summary_links(
             user_id, f"{summary_links_prompt}\n**INPUT:**\n{links}\n**OUTPUT:**"
         )
+
         content_data = await self._fetch_content(user_id, data, filtered_links)
         responses = await self._generate_summary_chunk(
             user_id,
@@ -281,23 +312,28 @@ class ChunkingUtils:
                 hrefs.append(href)
             return hrefs
         except Exception as e:
-            error = Error(user_id=user_id, error_message=str(e))
+            error = Error(
+                user_id=user_id,
+                error_message=f"Error while extracting hrefs: {str(e)} \n error from chunking helper in _extract_hrefs()",
+            )
             await self.error_repo.insert_error(error)
-            return None
+            return
 
     async def _fetch_content(self, user_id, json_data, hrefs):
         try:
-            content_dict = {}
+            content = []
             for entry in json_data:
                 href = entry.get("href", "")
                 if href in hrefs:
-                    content = entry.get("content", "")
-                    content_dict[href] = content
-            return content_dict
+                    content.append(entry)
+            return content
         except Exception as e:
-            error = Error(user_id=user_id, error_message=str(e))
+            error = Error(
+                user_id=user_id,
+                error_message=f"Error while fetching content: {str(e)} \n error from chunking helper in _fetch_content()",
+            )
             await self.error_repo.insert_error(error)
-            return None
+            return
 
     async def _filter_summary_links(self, user_id, text):
         """
@@ -313,20 +349,29 @@ class ChunkingUtils:
                     prompt=text, temperature=0
                 )
             except asyncio.TimeoutError:
-                return None
+                await self.error_repo.insert_error(
+                    Error(
+                        user_id=user_id,
+                        error_message=f"[ERROR] Request timed out \n error from chunking helper in _filter_summary_links()",
+                    )
+                )
+                return
             end_time = time.time()
         except openai.OpenAIError as e:
-            error = Error(user_id=user_id, error_message=str(e))
+            error = Error(
+                user_id=user_id,
+                error_message=f"OpenAI error: {str(e)} \n error from chunking helper in _filter_summary_links()",
+            )
             await self.error_repo.insert_error(error)
-            return None
+            return
 
         self.chunk_llm_request_count += 1
-        usage = getattr(response, "usage", None)
+        usage = response.get("usage", None)
         if not usage:
-            return None
+            return
 
-        input_tokens = usage.prompt_tokens
-        output_tokens = usage.completion_tokens
+        input_tokens = usage["prompt_tokens"]
+        output_tokens = usage["completion_tokens"]
         self.chunk_total_input_tokens += input_tokens
         self.chunk_total_output_tokens += output_tokens
 
@@ -343,7 +388,7 @@ class ChunkingUtils:
 
         await self.llm_usage_repo.save_usage(log_data)
 
-        output_text = response.choices[0].message.content.strip()
+        output_text = response["choices"][0]["message"]["content"].strip()
         filtered_links = await self.extract_json_list(user_id, output_text)
 
         if filtered_links:
@@ -351,10 +396,13 @@ class ChunkingUtils:
                 SummaryLinksResponse(urls=filtered_links)
                 return filtered_links
             except Exception as e:
-                error = Error(user_id=user_id, error_message=str(e))
+                error = Error(
+                    user_id=user_id,
+                    error_message=f"Error: {str(e)} \n error from chunking helper in _filter_summary_links",
+                )
                 await self.error_repo.insert_error(error)
-                return None
-        return None
+                return
+        return
 
     async def _generate_summary_chunk(self, user_id, text):
         """
@@ -370,20 +418,29 @@ class ChunkingUtils:
                     prompt=text, temperature=0
                 )
             except asyncio.TimeoutError:
-                return None
+                await self.error_repo.insert_error(
+                    Error(
+                        user_id=user_id,
+                        error_message=f"[ERROR] Request timed out \n error from chunking helper in _generate_summary_chunk()",
+                    )
+                )
+                return
             end_time = time.time()
         except openai.OpenAIError as e:
-            error = Error(user_id=user_id, error_message=str(e))
+            error = Error(
+                user_id=user_id,
+                error_message=f"OpenAI error: {str(e)} \n error from chunking helper in _generate_summary_chunk()",
+            )
             await self.error_repo.insert_error(error)
-            return None
+            return
 
         self.chunk_llm_request_count += 1
-        usage = getattr(response, "usage", None)
+        usage = response.get("usage", None)
         if not usage:
-            return None
+            return
 
-        input_tokens = usage.prompt_tokens
-        output_tokens = usage.completion_tokens
+        input_tokens = usage["prompt_tokens"]
+        output_tokens = usage["completion_tokens"]
         self.chunk_total_input_tokens += input_tokens
         self.chunk_total_output_tokens += output_tokens
 
@@ -399,7 +456,7 @@ class ChunkingUtils:
         )
 
         await self.llm_usage_repo.save_usage(log_data)
-        output_text = response.choices[0].message.content.strip()
+        output_text = response["choices"][0]["message"]["content"].strip()
         chunks = await self.extract_json_list(user_id, output_text)
         if chunks:
             try:
@@ -407,10 +464,13 @@ class ChunkingUtils:
                     SummaryData(**chunk)
                 return chunks
             except Exception as e:
-                error = Error(user_id=user_id, error_message=str(e))
+                error = Error(
+                    user_id=user_id,
+                    error_message=f"Error: {str(e)} \n error from chunking helper in _generate_summary_chunk()",
+                )
                 await self.error_repo.insert_error(error)
-                return None
-        return None
+                return
+        return
 
     async def extract_json_list(self, user_id, text):
         """
@@ -425,8 +485,9 @@ class ChunkingUtils:
                 return json.loads(match.group(1))
             except json.JSONDecodeError as e:
                 error = Error(
-                    user_id=user_id, error_message=f"JSONDecodeError: {str(e)}"
+                    user_id=user_id,
+                    error_message=f"JSONDecodeError: {str(e)} \n Error extracting json list from text (from chunking helper in extract_json_list())",
                 )
                 await self.error_repo.insert_error(error)
-                return None
-        return None
+                return
+        return

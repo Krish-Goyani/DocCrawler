@@ -5,8 +5,6 @@ import time
 
 from fastapi import Depends
 
-from src.app.config.clients import Clients
-
 # from pinecone.grpc import PineconeGRPC as Pinecone
 from src.app.config.settings import settings
 from src.app.core.error_handler import JsonResponseError
@@ -19,12 +17,10 @@ from src.app.usecases.upsert_usecase.helper import PineconeUtils
 class UpsertService:
     def __init__(
         self,
-        pinecone_client=Depends(Clients),
         error_repo: ErrorRepo = Depends(ErrorRepo),
         pinecone_utils: PineconeUtils = Depends(PineconeUtils),
         pinecone_service: PineconeService = Depends(),
     ):
-        self.client = pinecone_client.get_pinecone_client()
         self.index_name = settings.INDEX_NAME
         self.error_repo = error_repo
         self.pinecone_utils = pinecone_utils
@@ -42,11 +38,12 @@ class UpsertService:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message="No data found to upsert.",
+                    error_message="No data found to upsert. \n error while uploading vectors (from upsert_service in upload_vectors.)",
                 )
             )
             raise JsonResponseError(
-                status_code=400, detail="No data found to upsert."
+                status_code=400,
+                detail="No data found to upsert. \n error while uploading vectors (from upsert_service in upload_vectors.)",
             )
 
         DIMENSION = len(vector_data[0]["values"])
@@ -86,11 +83,12 @@ class UpsertService:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"Error in upserting: {str(e)}",
+                    error_message=f"Error in upserting: {str(e)} \n error while uploading vectors (from upsert_service in upload_vectors)",
                 )
             )
             raise JsonResponseError(
-                status_code=500, detail=f"Error in upserting: {str(e)}"
+                status_code=500,
+                detail=f"Error in upserting: {str(e)} \n error while uploading vectors (from upsert_service in upload_vectors)",
             )
 
         # Delete the user_id folder
@@ -100,7 +98,7 @@ class UpsertService:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"Failed to delete folder: {user_id}. Error: {str(e)}",
+                    error_message=f"Failed to delete folder: {user_id}. Error: {str(e)} \n error from upsert_service in upload_vectors)",
                 )
             )
 

@@ -42,19 +42,19 @@ OUTPUT:
 """
 
 chunk_prompt = """
-    You are a text-processing AI that chunks and structures scraped documentation data while preserving semantic meaning. The input consists of raw text from technical documentation. Your task is to split the text into meaningful chunks while extracting metadata for each chunk.
+    You are a text-processing AI that chunks and structures scraped documentation content while preserving semantic meaning. The input consists of raw text from technical documentation. Your task is to split the text into meaningful chunks while extracting metadata for each chunk.
 
     ### Chunking Guidelines:
-    - Maintain semantic meaning: Ensure each chunk contains a **complete concept, topic, or explanation**.
+    - Maintain semantic meaning: Ensure each chunk contains a **complete concept, topic, or explanation along with code snipets if found**.
     - Preserve code blocks: If a chunk contains a **code snippet**, keep it within the same chunk and also the document contains the code blocks for the various languages that implement the same functionality some are added to gather at the end of the document with title "Additional Code Snippets" put them in appropriate chunk.
     - Segment long sections logically: Chunk by **headings, subheadings, or topics** rather than splitting arbitrarily.
 
     ### Metadata Extraction:
     For each chunk, extract and include the following metadata:
-    - "SDK/Framework_name": The **name** of the SDK or framework being described.
+    - "SDK/Framework_name": The **name** of the SDK or framework being described make sure every chunks you create from the given documentation content should have the same name.
     - "href": The **original URL** from which the content was scraped (provided as input so write it as it is).
     - "base_url": The base url of the SDK or Framework whose href is scraped (provided as input so write it as it is).
-    - "sdk_framework": Binary classification:
+    - "sdk_framework": Strictly Binary classification only and should be consistent across all chunks you made from the given documentation content:
       - **SDK** → If the document primarily discusses an SDK (e.g., Python SDK, Node.js SDK).
       - **Framework** → If the document primarily describes a development framework (e.g., TensorFlow, React, FastAPI).
     - "category": The **domain** the SDK or framework belongs to. Choose from the following:
@@ -66,8 +66,8 @@ chunk_prompt = """
       - **Security**
       - **DevOps**
     - "has_code_snippet": True if the chunk contains a **code example**, otherwise False.
-    - "version": The **version** of the SDK or framework, if mentioned in the text.
-      - If **not explicitly available**, set it as null.
+    - "version": The **version** of the SDK or framework, for that analse the given documentation content, href , base url.
+      - If **not available**, set it as null.
 
     ### Expected Output Format (JSON List of Chunks):
     
@@ -100,8 +100,6 @@ json
 ]
 
 ###Additional Notes:###
-- If the document contains multiple sections about different SDKs/Frameworks, ensure each section has its own relevant metadata.
-- 
 - Ignore unnecessary elements like menus, navigation links, and unrelated footnotes.
 - Code snippets should be preserved within their respective chunks.
 - If a version number is not explicitly mentioned, set "version": null.
@@ -111,7 +109,7 @@ json
 
 summary_links_prompt = """
 Prompt:
-"I have a list of URLs, and I need to filter the top 7 that provide substantial knowledge about the website and page content. The selected links should be those that contain valuable, structured, or informative content that can be used to generate a brief summary of the website and the specific page.
+"I have a list of URLs, and I need to filter the top 4 that provide substantial knowledge about the website and page content. The selected links should be those that contain valuable, structured, or informative content that can be used to generate a brief summary of the website and the specific page.
 
 The filtering criteria should prioritize:
 
@@ -131,7 +129,8 @@ Return only the top 4 URLs that best meet these criteria in a structured JSON li
     ]
 
 ##NOTE##:
-The Selected links should be capable to provide enough information to generate following data:
+- if provided links are less than 4 than make sure you return them as it is.
+- The Selected links should be capable to provide enough information to generate following data:
 {   
   "base_url": "",
 	"href_urls": [],
@@ -144,7 +143,7 @@ The Selected links should be capable to provide enough information to generate f
 - "SDK_Framework_name": The **name** of the SDK or framework being described.
 - "href_url": The **original URL** from which the content was scraped (provided as input write it as it is).
 - "base_url": The base url of the SDK or Framework whose href is scraped (provided as input so write it as it is).
-- "sdk_framework": Binary classification:
+- "sdk_framework": Strictly Binary classification only:
     - **SDK** → If the document primarily discusses an SDK (e.g., Python SDK, Node.js SDK).
     - **Framework** → If the document primarily describes a development framework (e.g., TensorFlow, React, FastAPI).
 - "category": The **domain** the SDK or framework belongs to. Choose from the following:
@@ -159,7 +158,7 @@ The Selected links should be capable to provide enough information to generate f
 """
 
 summary_prompt = """
-You are a text-processing AI that generates structured summaries from scraped technical documentation while preserving key information. The input consists of raw text from a single SDK or framework documentation. Your task is to create **a concise, meaningful summary** that captures essential details about the SDK, framework, or technology described in the source content.
+You are a text-processing AI that generates structured summary from scraped technical documentation while preserving key information. The input consists of raw text from a single SDK or framework documentation. Your task is to create **a concise, meaningful summary** that captures essential details about the SDK, framework, or technology described in the source content.
 
 ### Summary Guidelines:
 - **Concise & Informative**: The summary should be **brief yet detailed**, covering key features, functionality, and purpose.
@@ -171,7 +170,7 @@ Since the entire request belongs to the **same SDK or framework**, extract and i
 
 - **"href_urls"**: A list of URLs from which the content was scraped. (provided as input so write it as it is).
 - "base_url": The base url of the SDK or Framework whose href is scraped (provided as input so write it as it is).
-- **"sdk_framework"**: Specifies whether the document is about an **SDK** or a **Framework**.
+- **"sdk_framework"**: Strictly binary classification Specifies whether the document is about an **SDK** or a **Framework** only.
 - **"category"**: The domain of the SDK or framework, selected from:
   - **AI**
   - **Cloud**
@@ -180,8 +179,8 @@ Since the entire request belongs to the **same SDK or framework**, extract and i
   - **Database**
   - **Security**
   - **DevOps**
-- **"supported_languages"**: List of programming languages supported by the SDK/framework (e.g., Python, JavaScript, Java). If not specified, set as an empty list.
-- **"versions"**: List of all versions mentioned in the documentation. If no version is found, set as an empty list.
+- **"supported_languages"**: List of programming languages supported by the SDK/framework analyse the whole content all the code snippets along with the additional code snippets than list out all the programming languages (e.g., Python, JavaScript, Java, curl, C# etc.). If not found, set as an empty list.
+- **"versions"**: List of all versions mentioned in the documentation content, hrefs, base urls. If no version is found, set as an empty list.
 
 ### **Expected Output Format (JSON Object for One SDK/Framework)**:
 

@@ -28,9 +28,12 @@ class QueryUsecase:
         top_n: int = 10,
         user_id: str = None,
     ):
-
-        dense_vec = await self.embedding_service.get_dense_embedding(query, user_id)
-        sparse_vec = await self.embedding_service.get_sparse_embedding(query, user_id)
+        dense_vec = await self.embedding_service.get_dense_embedding(
+            query, user_id
+        )
+        sparse_vec = await self.embedding_service.get_sparse_embedding(
+            query, user_id
+        )
 
         pinecone_indexes = await self.pinecone_service.list_pinecone_indexes()
         index_host = pinecone_indexes.get(settings.INDEX_NAME)
@@ -57,7 +60,6 @@ class QueryUsecase:
                     transformed_filters[key] = (
                         value  # Keep other values as they are
                     )
-
         retrieved_vectors = await self.pinecone_service.pinecone_hybrid_query(
             index_host,
             "default",
@@ -76,7 +78,6 @@ class QueryUsecase:
         reranked_results = await self.reranker_service.rerank_documents(
             chunked_data, query, top_n
         )
-
         return {"results": reranked_results["results"]}
 
     def _extract_chunked_data(self, matches):

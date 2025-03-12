@@ -15,6 +15,7 @@ class ErrorRepo:
         insert_result = await self.collection.insert_one(error.to_dict())
         if not insert_result.inserted_id:
             raise JsonResponseError(
-                status_code=500, detail="Failed to insert complaint"
+                status_code=500,
+                detail="Failed to insert complaint. \n error from error_repository in insert_error()",
             )
         return insert_result

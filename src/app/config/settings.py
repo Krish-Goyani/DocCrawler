@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     PINECONE_QUERY_URL: str
     JINA_RERANKING_MODEL: str
     JINA_RERANKING_URL: str
-    
 
     class Config:
         env_file = "src/.env"

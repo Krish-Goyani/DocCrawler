@@ -8,7 +8,7 @@ from typing import List
 from urllib.parse import urlparse
 
 import aiofiles
-import aiohttp
+import httpx
 from crawl4ai import AsyncWebCrawler, BrowserConfig
 from fastapi import Depends
 
@@ -57,7 +57,7 @@ class CrawlerUtils:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"[ERROR] Failed to get title for {base_url} and the user id is : {e}",
+                    error_message=f"[ERROR] Failed to get title for {base_url} and the user id is : {e} \n error from crawler_usecase/helper.py in get_file_name()",
                 )
             )
             return urlparse(base_url).netloc.replace(".", "_")
@@ -85,7 +85,7 @@ class CrawlerUtils:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"[ERROR] Failed to clean GPT output for {response_text} and the user id is : {user_id}",
+                    error_message=f"[ERROR] Failed to clean GPT output for {response_text} and the user id is : {user_id} \n error from crawler_usecase/helper.py in clean_gpt_output()",
                 )
             )
             return []
@@ -190,29 +190,48 @@ class CrawlerUtils:
             await self.llm_usage_repo.save_usage(log_data)
 
     async def fetch_sitemap(self, url, user_id):
-        """Fetch and parse the sitemap for the given URL."""
-        sitemap_url = url.rstrip("/") + "/sitemap.xml"
+        """Fetch and parse the sitemap for the given URL using httpx.
+        Tries both '/sitemap.xml' and '/sitemap_index.xml'. Returns a list of URLs if found,
+        otherwise returns an empty list.
+        """
+
+        async def _parse_sitemap(content):
+            try:
+                tree = ET.ElementTree(ET.fromstring(content))
+                return [
+                    elem.text
+                    for elem in tree.iter()
+                    if elem.tag.endswith("loc")
+                ]
+            except Exception:
+                await self.error_repo.insert_error(
+                    Error(
+                        user_id=user_id,
+                        error_message=f"[ERROR] Failed to fetch sitemap for {url}: {e} \n error from crawler_usecase/helper.py in fetch_sitemap()",
+                    )
+                )
+                return []
+
+        sitemap_paths = ["/sitemap.xml", "/sitemap_index.xml"]
+        urls_found = []
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(sitemap_url) as response:
-                    if response.status == 200:
-                        sitemap_content = await response.read()
-                        tree = ET.ElementTree(ET.fromstring(sitemap_content))
-                        urls = [
-                            elem.text
-                            for elem in tree.iter()
-                            if elem.tag.endswith("loc")
-                        ]
-                        return urls
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                for path in sitemap_paths:
+                    sitemap_url = url.rstrip("/") + path
+                    response = await client.get(sitemap_url)
+                    if response.status_code == 200:
+                        urls_found = await _parse_sitemap(response.content)
+                        if urls_found:
+                            break
+            return urls_found
         except Exception as e:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"[ERROR] Failed to fetch sitemap for {url}: {e}",
+                    error_message=f"[ERROR] Failed to fetch sitemap for {url}: {e} \n error from crawler_usecase/helper.py in fetch_sitemap()",
                 )
             )
             return []
-        return []
 
     async def filter_links_gpt(self, links, file_name, user_id):
         if not links:
@@ -261,7 +280,7 @@ class CrawlerUtils:
             await self.error_repo.insert_error(
                 Error(
                     user_id=user_id,
-                    error_message=f"[ERROR] LLM call failed: {e}",
+                    error_message=f"[ERROR] LLM call failed: {e} \n error while filtering links through gpt (from crawler_usecase/helper.py in filter_links_gpt)",
                 )
             )
             # Release the counter if the call failed

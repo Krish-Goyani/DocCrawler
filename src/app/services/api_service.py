@@ -4,6 +4,14 @@ from src.app.core.error_handler import JsonResponseError
 
 
 class ApiService:
+    def __init__(self) -> None:
+        self.timeout = httpx.Timeout(
+            connect=60.0,  # Time to establish a connection
+            read=150.0,  # Time to read the response
+            write=150.0,  # Time to send data
+            pool=60.0,  # Time to wait for a connection from the pool
+        )
+
     async def get(
         self, url: str, headers: dict = None, data: dict = None
     ) -> httpx.Response:
@@ -15,8 +23,8 @@ class ApiService:
         :return: The HTTP response.
         """
         try:
-            timeout = httpx.Timeout(30.0)
-            async with httpx.AsyncClient(timeout=timeout) as client:
+
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.get(url, headers=headers, params=data)
                 response.raise_for_status()
                 try:
@@ -29,13 +37,17 @@ class ApiService:
             )
             raise JsonResponseError(status_code=500, detail=error_msg)
         except httpx.HTTPStatusError as exc:
-            error_msg = f"Error response {exc.response.status_code} while requesting {exc.request.url!r}."
+            error_msg = f"Error response {exc.response.status_code} while requesting {exc.request.url!r}. \n error from api_service in get()"
             raise JsonResponseError(
                 status_code=exc.response.status_code, detail=error_msg
             )
 
     async def post(
-        self, url: str, headers: dict = None, data: dict = None, files: dict = None
+        self,
+        url: str,
+        headers: dict = None,
+        data: dict = None,
+        files: dict = None,
     ) -> httpx.Response:
         """
         Sends an asynchronous POST request with a timeout.
@@ -46,25 +58,29 @@ class ApiService:
         """
         try:
             timeout = httpx.Timeout(90.0)
-            async with httpx.AsyncClient(timeout=timeout) as client:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
                 if files:
-                    response = await client.post(url, headers=headers, data=data, files=files)
+                    response = await client.post(
+                        url, headers=headers, data=data, files=files
+                    )
                 else:
-                    response = await client.post(url, headers=headers, json=data)
+                    response = await client.post(
+                        url, headers=headers, json=data
+                    )
                 response.raise_for_status()
                 return response.json()
         except httpx.RequestError as exc:
             raise JsonResponseError(
                 status_code=500,
-                detail=f"API request failed with error: {str(exc)}",
+                detail=f"API request failed with error: {str(exc)} \n error from api_service in post()",
             )
         except httpx.HTTPStatusError as exc:
             raise JsonResponseError(
                 status_code=500,
-                detail=f"API request failed with error: {str(exc)}",
+                detail=f"API request failed with error: {str(exc)} \n error from api_service in post()",
             )
         except Exception as exc:
             raise JsonResponseError(
                 status_code=500,
-                detail=f"API request failed with error: {str(exc)}",
+                detail=f"API request failed with error: {str(exc)} \n error from api_service in post()",
             )

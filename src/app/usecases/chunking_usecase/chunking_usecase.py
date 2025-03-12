@@ -6,12 +6,19 @@ import aiofiles
 from fastapi import Depends
 
 from src.app.config.settings import settings
+from src.app.models.domain.error import Error
+from src.app.repositories.error_repository import ErrorRepo
 from src.app.usecases.chunking_usecase.chunking_helper import ChunkingUtils
 
 
 class ChunkingUseCase:
-    def __init__(self, chunking_utils: ChunkingUtils = Depends()):
+    def __init__(
+        self,
+        chunking_utils: ChunkingUtils = Depends(),
+        error_repo=Depends(ErrorRepo),
+    ):
         self.chunking_utils = chunking_utils
+        self.error_repo = error_repo
 
     async def execute_chunking(self, user_id: str):
         """
@@ -20,38 +27,66 @@ class ChunkingUseCase:
         :param user_id: The user ID.
         :return: The user ID.
         """
+        try:
+            dir_path = os.path.join(settings.USER_DATA, user_id, "results")
+            json_files = [
+                os.path.join(dir_path, file)
+                for file in os.listdir(dir_path)
+                if file.endswith(".json")
+            ]
 
-        dir_path = os.path.join(settings.USER_DATA, user_id, "results")
-        json_files = [
-            os.path.join(dir_path, file)
-            for file in os.listdir(dir_path)
-            if file.endswith(".json")
-        ]
+            all_chunks = []
+            semaphore = asyncio.Semaphore(settings.CHUNK_SEMAPHORE)
 
-        all_chunks = []
-        semaphore = asyncio.Semaphore(settings.CHUNK_SEMAPHORE)
-        
-        # call batches api (for chunking)
-        batch_api_result =  await self.chunking_utils.call_batches_api(json_files ,user_id)
-        if batch_api_result:
-            all_chunks.extend(batch_api_result)
-
-        for file in json_files:
-            # chunks = await self.chunking_utils.process_file(
-            #     user_id, file, semaphore
-            # )
-            # if chunks:
-            #     all_chunks.extend(chunks)
-            # all_chunks.extend(chunks)
-            summary_chunks = await self.chunking_utils.process_summary_file(
-                user_id, file
+            # call batches api (for chunking)
+            batch_api_result = await self.chunking_utils.call_batches_api(
+                json_files, user_id
             )
-            if summary_chunks:
-                all_chunks.extend(summary_chunks)
+            if batch_api_result:
+                all_chunks.extend(batch_api_result)
 
-        save_path = os.path.join(settings.USER_DATA, user_id)
-        chunk_file = os.path.join(save_path, "all_chunks.json")
-        async with aiofiles.open(chunk_file, mode="w") as chunk_f:
-            await chunk_f.write(json.dumps(all_chunks, indent=2))
+            for file in json_files:
+                try:
+                    # chunks = await self.chunking_utils.process_file(
+                    #     user_id, file, semaphore
+                    # )
+                    # if chunks:
+                    #     all_chunks.extend(chunks)
+                    summary_chunks = (
+                        await self.chunking_utils.process_summary_file(
+                            user_id, file
+                        )
+                    )
+                    if summary_chunks:
+                        for summary_chunk in summary_chunks:
+                            summary_chunk["is_summary"] = "true"
+                        all_chunks.extend(summary_chunks)
 
+                except Exception as e:
+                    await self.error_repo.insert_error(
+                        Error(
+                            user_id=user_id,
+                            error_message=f"[ERROR] occured while processing file in chunking  : {e} \n error from chunking_usecase in executing_chunking()",
+                        )
+                    )
+
+                save_path = os.path.join(settings.USER_DATA, user_id)
+                chunk_file = os.path.join(save_path, "all_chunks.json")
+                try:
+                    async with aiofiles.open(chunk_file, mode="w") as chunk_f:
+                        await chunk_f.write(json.dumps(all_chunks, indent=2))
+                except Exception as e:
+                    await self.error_repo.insert_error(
+                        Error(
+                            user_id=user_id,
+                            error_message=f"[ERROR] occured while saving chunks to file : {e} \n error from chunking_usecase in executing_chunking()",
+                        )
+                    )
+        except Exception as e:
+            await self.error_repo.insert_error(
+                Error(
+                    user_id=user_id,
+                    error_message=f"[ERROR] occured while executing chunks : {e} \n error from chunking_usecase in executing_chunking()",
+                )
+            )
         return user_id

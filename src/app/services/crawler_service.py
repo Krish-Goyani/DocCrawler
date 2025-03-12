@@ -55,7 +55,7 @@ class CrawlerService:
             await self.error_repo.insert_error(
                 Error(
                     user_id=self.user_id,
-                    error_message=f"[ERROR] Failed to scrape {url}: {e}",
+                    error_message=f"[ERROR] Failed to scrape {url}: {e} \n error while scraping from crawler_service in crawl_page()",
                 )
             )
             return
@@ -64,7 +64,7 @@ class CrawlerService:
             await self.error_repo.insert_error(
                 Error(
                     user_id=self.user_id,
-                    error_message=f"[FAILED] Crawling unsuccessful for {url}",
+                    error_message=f"[FAILED] Crawling unsuccessful for {url} \n error while crawling (from crawler_service in crawl_page())",
                 )
             )
             return
