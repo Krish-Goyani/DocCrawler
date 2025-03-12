@@ -47,32 +47,34 @@ class ChunkingUtils:
     async def call_batches_api(self, json_files, user_id):
 
         # 1. Create jsonl file
-        processed_files = set()
+        # processed_files = set()
 
-        for file in json_files:
-            jsonl_file = await self.batch_api_utils.create_jsonl_file(
-                file, user_id, chunk_prompt
-            )
-            processed_files.add(jsonl_file)  # Mark file as processed
+        # for file in json_files:
+        #     jsonl_file = await self.batch_api_utils.create_jsonl_file(
+        #         file, user_id, chunk_prompt
+        #     )
+        #     processed_files.add(jsonl_file)  # Mark file as processed
 
-        processed_files = list(processed_files)
+        # processed_files = list(processed_files)
 
         # 2. Upload jsonl file
-        upload_tasks = [
-            self.openai_service.upload_jsonl_file(jsonl_file, purpose="batch")
-            for jsonl_file in processed_files
-        ]
-        file_ids = await asyncio.gather(*upload_tasks, return_exceptions=True)
+        # upload_tasks = [
+        #     self.openai_service.upload_jsonl_file(jsonl_file, purpose="batch")
+        #     for jsonl_file in processed_files
+        # ]
+        # file_ids = await asyncio.gather(*upload_tasks, return_exceptions=True)
 
         # 3. Create batch requests asynchronously
-        tasks = [
-            self.openai_service.create_batch_request(file_id)
-            for file_id in file_ids
-        ]
-        batch_request_ids = await asyncio.gather(*tasks, return_exceptions=True)
-
+        # tasks = [
+        #     self.openai_service.create_batch_request(file_id)
+        #     for file_id in file_ids
+        # ]
+        # batch_request_ids = await asyncio.gather(*tasks, return_exceptions=True)
+        batch_request_ids = ["batch_67d18e1d3eac819089da5df3630ba21f"]
+        user_id = "0998f5f8-637e-4a72-84aa-8797e1fcb63b"
         # 4. Check status of batch + retrieve file content
         content = await self._check_batch_status(batch_request_ids, user_id)
+        
 
         return content
 
@@ -160,7 +162,12 @@ class ChunkingUtils:
 
             if not pending_batches:
                 break
+<<<<<<< Updated upstream
             await asyncio.sleep(800)  # Sleep for 1 hour
+=======
+            
+            await asyncio.sleep(3600)  # Sleep for 1 hour
+>>>>>>> Stashed changes
 
         return responses
 
