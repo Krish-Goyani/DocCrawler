@@ -221,6 +221,17 @@ class DocumentCrawlerApp:
                         f"API call failed with status {response.status}: {error_message}"
                     )
 
+    # async def call_query_api(self, query_data: Dict[str, Any]) -> Dict[str, Any]:
+    #     """Call the query API to search indexed documents."""
+    #     async with httpx.AsyncClient() as client:
+    #         response = await client.post("http://localhost:8000/query", json=query_data)
+    #         print(response)
+    #         if response.status_code == 200:
+    #             return response.json()
+    #         else:
+    #             error_message = response.text
+    #             raise Exception(f"API call failed with status {response.status_code}: {error_message}")
+
     async def process_urls(self, urls: List[str]):
         """Process the provided URLs by crawling and indexing them."""
         with self.status_container:
@@ -262,17 +273,17 @@ class DocumentCrawlerApp:
                 # Convert has_code_snippet from UI selection to boolean
                 if "has_code_snippet" in metadata:
                     if metadata["has_code_snippet"] == "Yes":
-                        metadata["has_code_snippet"] = True
+                        metadata["has_code_snippet"] = "True"
                     elif metadata["has_code_snippet"] == "No":
-                        metadata["has_code_snippet"] = False
+                        metadata["has_code_snippet"] = "False"
                     else:
                         metadata.pop("has_code_snippet", None)
 
                 if "is_summary" in metadata:
                     if metadata["is_summary"] == "Yes":
-                        metadata["is_summary"] = True
+                        metadata["is_summary"] = "True"
                     elif metadata["is_summary"] == "No":
-                        metadata["is_summary"] = False
+                        metadata["is_summary"] = "False"
                     else:
                         metadata.pop("is_summary", None)
 
