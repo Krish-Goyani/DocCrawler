@@ -22,6 +22,7 @@ from src.app.utils.prompts import (
     summary_links_prompt,
     summary_prompt,
 )
+from src.app.utils.batch_api_utils import BatchAPIUtils
 
 
 class ChunkingUtils:
@@ -30,6 +31,7 @@ class ChunkingUtils:
         error_repo: ErrorRepo = Depends(),
         llm_usage_repo: LLMUsageRepository = Depends(),
         openai_service: OpenAIService = Depends(),
+        batch_api_utils: BatchAPIUtils = Depends()
     ) -> None:
         self.error_repo = error_repo
         self.llm_usage_repo = llm_usage_repo
@@ -40,7 +42,114 @@ class ChunkingUtils:
         self.openai_service = openai_service
         self.chunk_prompt = chunk_prompt
         self.summary_prompt = summary_prompt
+        self.batch_api_utils = batch_api_utils
+        
+    async def call_batches_api(self, json_files ,user_id):
+        
+        # 1. Create jsonl file
+        processed_files = set()
 
+        for file in json_files:
+            jsonl_file = await self.batch_api_utils.create_jsonl_file(
+                file, user_id, chunk_prompt
+            )
+            processed_files.add(jsonl_file)  # Mark file as processed
+
+        processed_files = list(processed_files)
+        
+        # 2. Upload jsonl file
+        upload_tasks = [
+            self.openai_service.upload_jsonl_file(jsonl_file, purpose="batch")
+            for jsonl_file in processed_files
+        ]
+        file_ids = await asyncio.gather(*upload_tasks, return_exceptions=True)
+            
+        # 3. Create batch requests asynchronously
+        tasks = [
+            self.openai_service.create_batch_request(file_id)
+            for file_id in file_ids
+        ]
+        batch_request_ids = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # 4. Check status of batch + retrieve file content
+        content = await self._check_batch_status(batch_request_ids,user_id)
+        
+        return content
+        
+    async def _check_batch_status(self, batch_request_ids, user_id):
+        responses = []
+        pending_batches = set(batch_request_ids)
+        
+        for _ in range(24):  # 24 iterations (24 hours)
+            print("Checking status...")
+            for batch_id in list(pending_batches):
+                result = await self.openai_service.get_batch_status(batch_id)
+                print(result["status"])
+                if result["status"] == "completed":
+                    print(f"Batch {batch_id} completed! Downloading results...")
+                    content = await self.openai_service.retrieve_file_content(result["output_file_id"])
+                    
+                    parsed_data = []
+
+                    # Ensure content is a string
+                    if isinstance(content, str):
+                        for line in content.strip().split("\n"): 
+                            if line.strip():
+                                parsed_data.append(json.loads(line))
+                    else:
+                        parsed_data = [content] if isinstance(content, dict) else content  # Use directly if already parsed
+                    
+                    extracted_responses = []
+
+                    # Extract choices from parsed data
+                    for entry in parsed_data:  
+                        if isinstance(entry, dict) and "response" in entry:
+                            response = entry["response"]
+                            if "body" in response:
+                                body = response["body"]
+                                choices = body.get("choices", [])  
+                                if choices:
+                                    content_text = choices[0]["message"]["content"]
+                                    
+                                    # Call extract_json_list to format JSON response if applicable
+                                    formatted_response = await self.extract_json_list(user_id, content_text)
+                                    
+                                    if formatted_response:
+                                        extracted_responses.append(formatted_response)  # Store formatted JSON
+                                        
+                                usage = body["usage"]
+                                if not usage:
+                                    return
+                                self.chunk_llm_request_count += 1
+                                input_tokens = usage["prompt_tokens"]
+                                output_tokens = usage["completion_tokens"]
+                                self.chunk_total_input_tokens += input_tokens
+                                self.chunk_total_output_tokens += output_tokens
+
+                                log_data = LogData(
+                                    timestamp=time.time(),
+                                    request_count=self.chunk_llm_request_count,
+                                    input_tokens=input_tokens,
+                                    output_tokens=output_tokens,
+                                    total_input_tokens=self.chunk_total_input_tokens,
+                                    total_output_tokens=self.chunk_total_output_tokens,
+                                    time_taken=time.time(),
+                                    request_type=self.request_type,
+                                )
+
+                                await self.llm_usage_repo.save_usage(log_data)
+
+                    responses.extend(extracted_responses)
+                    pending_batches.remove(batch_id) 
+
+                elif result["status"] == "failed":
+                    print(f"Batch {batch_id} failed")
+                    pending_batches.remove(batch_id)
+
+            await asyncio.sleep(3600)  # Sleep for 1 hour
+
+        return responses
+        
     async def process_file(self, user_id: str, file_path, semaphore):
         """
         Process the file and chunk the data.

@@ -17,8 +17,11 @@ class Settings(BaseSettings):
     LLM_USAGE_COLLECTION_NAME: str
     USER_DATA: str
     CHUNK_SEMAPHORE: int
-    OPENAI_URL: str
+    OPENAI_BASE_URL: str
+    OPENAI_COMPLETION_ENDPOINT: str
+    OPENAI_FILE_ENDPOINT: str
     OPENAI_MODEL: str
+    OPENAI_BATCH_ENDPOINT: str
     PINECONE_LIST_INDEX_URL: str
     PINECONE_API_VERSION: str
     PINECONE_CREATE_INDEX_URL: str
@@ -26,6 +29,7 @@ class Settings(BaseSettings):
     PINECONE_QUERY_URL: str
     JINA_RERANKING_MODEL: str
     JINA_RERANKING_URL: str
+    
 
     class Config:
         env_file = "src/.env"

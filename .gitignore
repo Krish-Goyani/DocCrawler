@@ -176,3 +176,4 @@ cache/
 .DS_Store
 launch.json
 bm25_model.pkl
+batch_api

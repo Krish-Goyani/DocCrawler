@@ -19,7 +19,10 @@ class ApiService:
             async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.get(url, headers=headers, params=data)
                 response.raise_for_status()
-                return response.json()
+                try:
+                    return response.json()
+                except:
+                    return response.text
         except httpx.RequestError as exc:
             error_msg = (
                 f"An error occurred while requesting {exc.request.url!r}."
@@ -32,7 +35,7 @@ class ApiService:
             )
 
     async def post(
-        self, url: str, headers: dict = None, data: dict = None
+        self, url: str, headers: dict = None, data: dict = None, files: dict = None
     ) -> httpx.Response:
         """
         Sends an asynchronous POST request with a timeout.
@@ -44,7 +47,10 @@ class ApiService:
         try:
             timeout = httpx.Timeout(90.0)
             async with httpx.AsyncClient(timeout=timeout) as client:
-                response = await client.post(url, headers=headers, json=data)
+                if files:
+                    response = await client.post(url, headers=headers, data=data, files=files)
+                else:
+                    response = await client.post(url, headers=headers, json=data)
                 response.raise_for_status()
                 return response.json()
         except httpx.RequestError as exc:

@@ -30,14 +30,19 @@ class ChunkingUseCase:
 
         all_chunks = []
         semaphore = asyncio.Semaphore(settings.CHUNK_SEMAPHORE)
+        
+        # call batches api (for chunking)
+        batch_api_result =  await self.chunking_utils.call_batches_api(json_files ,user_id)
+        if batch_api_result:
+            all_chunks.extend(batch_api_result)
 
         for file in json_files:
-            chunks = await self.chunking_utils.process_file(
-                user_id, file, semaphore
-            )
-            if chunks:
-                all_chunks.extend(chunks)
-            all_chunks.extend(chunks)
+            # chunks = await self.chunking_utils.process_file(
+            #     user_id, file, semaphore
+            # )
+            # if chunks:
+            #     all_chunks.extend(chunks)
+            # all_chunks.extend(chunks)
             summary_chunks = await self.chunking_utils.process_summary_file(
                 user_id, file
             )
