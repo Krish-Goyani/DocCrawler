@@ -162,12 +162,8 @@ class ChunkingUtils:
 
             if not pending_batches:
                 break
-<<<<<<< Updated upstream
-            await asyncio.sleep(800)  # Sleep for 1 hour
-=======
             
-            await asyncio.sleep(3600)  # Sleep for 1 hour
->>>>>>> Stashed changes
+            await asyncio.sleep(800)  # Sleep for 1 hour
 
         return responses
 
