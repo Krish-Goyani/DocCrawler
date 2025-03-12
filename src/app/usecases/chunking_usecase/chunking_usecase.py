@@ -43,7 +43,13 @@ class ChunkingUseCase:
                 json_files, user_id
             )
             if batch_api_result:
-                all_chunks.extend(batch_api_result)
+                all_chunks.extend(
+                    [
+                        item
+                        for item in batch_api_result
+                        if isinstance(item, dict)
+                    ]
+                )
 
             for file in json_files:
                 try:

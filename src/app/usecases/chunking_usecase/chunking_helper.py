@@ -158,7 +158,9 @@ class ChunkingUtils:
                     print(f"Batch {batch_id} failed")
                     pending_batches.remove(batch_id)
 
-            await asyncio.sleep(3600)  # Sleep for 1 hour
+            if not pending_batches:
+                break
+            await asyncio.sleep(800)  # Sleep for 1 hour
 
         return responses
 
