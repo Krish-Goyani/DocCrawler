@@ -129,7 +129,7 @@ class DocumentCrawlerApp:
                         )
                         has_code_snippet = st.selectbox(
                             "Has Code Snippet",
-                            ["Not Specified", "Yes", "No"],
+                            ["Not Specified", "Yes"],
                             index=0,
                         )
 
@@ -146,11 +146,7 @@ class DocumentCrawlerApp:
                     with col2:
                         is_summary = st.selectbox(
                             "Is Summary",
-                            [
-                                "Not Specified",
-                                "Yes",
-                                "No",
-                            ],  # Convert checkbox to dropdown with "Not Specified"
+                            ["Not Specified","Yes"],  # Convert checkbox to dropdown with "Not Specified"
                             index=0,
                         )
 
@@ -274,16 +270,12 @@ class DocumentCrawlerApp:
                 if "has_code_snippet" in metadata:
                     if metadata["has_code_snippet"] == "Yes":
                         metadata["has_code_snippet"] = "True"
-                    elif metadata["has_code_snippet"] == "No":
-                        metadata["has_code_snippet"] = "False"
                     else:
                         metadata.pop("has_code_snippet", None)
 
                 if "is_summary" in metadata:
                     if metadata["is_summary"] == "Yes":
                         metadata["is_summary"] = "True"
-                    elif metadata["is_summary"] == "No":
-                        metadata["is_summary"] = "False"
                     else:
                         metadata.pop("is_summary", None)
 
