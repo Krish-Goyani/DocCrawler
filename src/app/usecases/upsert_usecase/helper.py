@@ -150,5 +150,5 @@ class PineconeUtils:
                 status_code=500,
                 detail=f"Error in processing {file_path}: {str(e)} \n error from upsert_usecase/helper in load_json_files_for_pinecone()",
             )
-        print(pinecone_records)
+        # print(pinecone_records)
         return pinecone_records
