@@ -12,11 +12,11 @@ query_router = APIRouter()
 @query_router.post("/query")
 @error_handler
 async def query(request: QueryRequest, controller: QueryController = Depends()):
-        return await controller.handle_query(
-            request.query,
-            request.filters,
-            request.alpha,
-            request.top_k,
-            request.top_n,
-            str(uuid.uuid4()),
-        )
+    return await controller.handle_query(
+        request.query,
+        request.filters,
+        request.alpha,
+        request.top_k,
+        request.top_n,
+        str(uuid.uuid4()),
+    )

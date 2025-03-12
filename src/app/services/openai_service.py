@@ -43,7 +43,7 @@ class OpenAIService:
         }
         try:
             response = await self.api_service.post(
-                url=self.base_url, headers=headers, data=payload
+                url=url, headers=headers, data=payload
             )
             return response
         except Exception as e:
@@ -68,7 +68,6 @@ class OpenAIService:
             response = await self.api_service.post(
                 url, headers=headers, data=payload, files=files
             )
-            print(response)
             return response.get("id")
         except Exception as e:
             raise JsonResponseError(status_code=500, detail=str(e))
@@ -92,7 +91,6 @@ class OpenAIService:
             response = await self.api_service.post(
                 url, headers=headers, data=payload
             )
-            print(response)
             return response.get("id")
         except Exception as e:
             raise JsonResponseError(status_code=500, detail=str(e))
@@ -113,7 +111,6 @@ class OpenAIService:
             response = await self.api_service.post(
                 url, headers=headers, data=payload, files=files
             )
-            print(response)
             return response.get("id")
         except Exception as e:
             raise JsonResponseError(status_code=500, detail=str(e))
@@ -137,7 +134,6 @@ class OpenAIService:
             response = await self.api_service.post(
                 url, headers=headers, data=payload
             )
-            print(response)
             return response.get("id")
         except Exception as e:
             raise JsonResponseError(status_code=500, detail=str(e))
@@ -157,7 +153,6 @@ class OpenAIService:
     async def retrieve_file_content(self, file_id):
 
         url = f"{self.base_url}{self.file_endpoint}/{file_id}/content"
-        print(url)
 
         headers = {"Authorization": f"Bearer {settings.OPENAI_KEY}"}
 

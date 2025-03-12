@@ -189,6 +189,7 @@ Since the entire request belongs to the **same SDK or framework**, extract and i
   {
     "chunked_data": "Gemini API provides powerful AI capabilities for text and image processing. It allows developers to integrate generative AI into applications with pre-trained models. The API supports multimodal inputs and has endpoints for text completion, image recognition, and structured data extraction. Designed for high performance and scalability, it is suitable for production-ready AI applications.",
     "metadata": {
+    "SDK_Framework_name": "Gemini API",
     "base_url": https://ai.google.dev/gemini-api/docs",
     "href_urls": [
         "https://ai.google.dev/gemini-api/docs",

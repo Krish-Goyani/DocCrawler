@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 
 import aiohttp
 import streamlit as st
+from aiohttp import ClientTimeout
 
 
 class DocumentCrawlerApp:
@@ -146,7 +147,10 @@ class DocumentCrawlerApp:
                     with col2:
                         is_summary = st.selectbox(
                             "Is Summary",
-                            ["Not Specified","Yes"],  # Convert checkbox to dropdown with "Not Specified"
+                            [
+                                "Not Specified",
+                                "Yes",
+                            ],  # Convert checkbox to dropdown with "Not Specified"
                             index=0,
                         )
 
@@ -160,16 +164,16 @@ class DocumentCrawlerApp:
             url_text,
             query,
             alpha,
-            str(sdk_framework_name).lower(),
+            sdk_framework_name,
             base_url,
-            str(sdk_framework).lower(),
-            str(category).lower(),
-            str(has_code_snippet).lower(),
-            str(version).lower(),
+            sdk_framework,
+            category,
+            has_code_snippet,
+            version,
             query_button,
             top_k,
             top_n,
-            str(is_summary).lower(),
+            is_summary,
         )
 
     def validate_urls(self, url_text: str) -> List[str]:
@@ -189,7 +193,9 @@ class DocumentCrawlerApp:
 
     async def call_crawler_api(self, urls: List[str]) -> Dict[str, Any]:
         """Call the crawler API to process the provided URLs."""
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(
+            timeout=ClientTimeout(total=86400)
+        ) as session:
             async with session.post(
                 "http://localhost:8000/", json=urls
             ) as response:
@@ -268,13 +274,13 @@ class DocumentCrawlerApp:
             try:
                 # Convert has_code_snippet from UI selection to boolean
                 if "has_code_snippet" in metadata:
-                    if metadata["has_code_snippet"] == "yes":
+                    if metadata["has_code_snippet"] == "Yes":
                         metadata["has_code_snippet"] = "true"
                     else:
                         metadata.pop("has_code_snippet", None)
 
                 if "is_summary" in metadata:
-                    if metadata["is_summary"] == "yes":
+                    if metadata["is_summary"] == "Yes":
                         metadata["is_summary"] = "true"
                     else:
                         metadata.pop("is_summary", None)
@@ -282,7 +288,7 @@ class DocumentCrawlerApp:
                 # Remove sdk_framework if set to "Not Specified"
                 if (
                     "sdk_framework" in metadata
-                    and metadata["sdk_framework"] == "Not Specified"
+                    and metadata["sdk_framework"] == "not specified"
                 ):
                     metadata.pop("sdk_framework", None)
 
@@ -384,12 +390,12 @@ class DocumentCrawlerApp:
                 return
 
             metadata = {
-                "SDK_Framework_name": sdk_framework_name,
+                "SDK_Framework_name": str(sdk_framework_name).lower(),
                 "base_url": base_url,
-                "sdk_framework": sdk_framework,
-                "category": category,
+                "sdk_framework": str(sdk_framework).lower(),
+                "category": str(category).lower(),
                 "has_code_snippet": has_code_snippet,
-                "version": version,
+                "version": str(version).lower(),
                 "is_summary": is_summary,
             }
             asyncio.run(

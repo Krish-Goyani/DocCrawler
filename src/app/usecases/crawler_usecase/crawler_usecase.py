@@ -40,7 +40,9 @@ class CrawlerUsecase:
                 final_md_content = self.crawler_utils.merge_content(
                     md_content, hidden_snippets
                 )
-                [x for x in self.state.results[file_name] if x["href"] == url][0]["content"] = final_md_content
+                [x for x in self.state.results[file_name] if x["href"] == url][
+                    0
+                ]["content"] = final_md_content
             except asyncio.QueueEmpty:
                 break
             except asyncio.CancelledError:
