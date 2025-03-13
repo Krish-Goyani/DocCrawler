@@ -8,13 +8,14 @@ class FilterPromptResponse(BaseModel):
 
 
 class ChunkMetadata(BaseModel):
-    SDK_Framework_name: str
+    sdk_framework_name: str
     base_url: HttpUrl
     href: HttpUrl
     sdk_framework: Literal["SDK", "Framework"]
-    category: str
     has_code_snippet: bool
     version: Optional[str]
+    domains: Optional[List[str]]
+    subdomains: Optional[List[str]]
 
 
 class ChunkedData(BaseModel):
@@ -30,7 +31,6 @@ class SummaryMetadata(BaseModel):
     base_url: HttpUrl
     href_urls: List[HttpUrl]
     sdk_framework: Literal["SDK", "Framework"]
-    category: str
     supported_languages: Optional[List[str]]
     versions: Optional[List[str]]
 

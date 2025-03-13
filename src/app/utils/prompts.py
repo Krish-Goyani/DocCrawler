@@ -57,18 +57,91 @@ chunk_prompt = """
     - "sdk_framework": Strictly Binary classification only and should be consistent across all chunks you made from the given documentation content:
       - **SDK** → If the document primarily discusses an SDK (e.g., Python SDK, Node.js SDK).
       - **Framework** → If the document primarily describes a development framework (e.g., TensorFlow, React, FastAPI).
-    - "category": The **domain** the SDK or framework belongs to. Choose from the following:
-      - **AI**
-      - **Cloud**
-      - **Web**
-      - **Mobile**
-      - **Database**
-      - **Security**
-      - **DevOps**
     - "has_code_snippet": True if the chunk contains a **code example**, otherwise False.
     - "version": The **version** of the SDK or framework, for that analse the given documentation content, href , base url.
       - If **not available**, set it as null.
+    - "Domains": The primary domains categories from the mapper list that best matches the content
+    - "Subdomains": The specific subdomains from the mapper that apply to this content
+    ## Domain and Subdomain Classification:
+    Analyze the content's subject matter and assign the most appropriate domains and relevant subdomains from this classification system:
 
+    1. **Business & Finance**
+      - Business Strategy
+      - Marketing & Advertising
+      - Finance & Investment
+      - Banking & Insurance
+      - Accounting & Taxation
+      - Startups & Entrepreneurship
+
+    2. **Legal & Compliance**
+      - Corporate Law
+      - Intellectual Property
+      - Contracts & Agreements
+      - Regulatory Compliance
+      - Privacy & Data Protection
+
+    3. **Technology & Software**
+      - Programming & Development
+      - AI & Machine Learning
+      - Cybersecurity
+      - Cloud Computing
+      - Networking & IT Infrastructure
+
+    4. **Healthcare & Medicine**
+      - Medical Research
+      - Pharmaceuticals
+      - Healthcare Administration
+      - Public Health & Epidemiology
+
+    5. **Science & Engineering**
+      - Physics & Chemistry
+      - Mechanical & Electrical Engineering
+      - Environmental Science
+      - Biotechnology
+
+    6. **Education & Learning**
+      - Academic Research
+      - Online Learning
+      - Teaching & Pedagogy
+      - Training & Skill Development
+
+    7. **Arts & Entertainment**
+      - Music & Movies
+      - Literature & Writing
+      - Gaming & Esports
+      - Photography & Design
+
+    8. **Government & Politics**
+      - Public Policy
+      - Political Science
+      - International Relations
+      - Government Regulations
+
+    9. **News & Media**
+      - Journalism
+      - Press Releases
+      - Social Media Trends
+
+    10. **E-Commerce & Retail**
+        - Online Shopping
+        - Supply Chain & Logistics
+        - Consumer Behavior
+
+    11. **Real Estate & Construction**
+        - Property Investment
+        - Architecture & Urban Planning
+
+    12. **Sports & Fitness**
+        - Professional Sports
+        - Health & Nutrition
+
+    13. **Travel & Hospitality**
+        - Tourism
+        - Hotel & Restaurant Industry
+    - Ensure domains and subdomain assignments are consistent across all chunks from the same source page
+    - You may assign multiple relevant domains and subdomains if the content spans several areas
+    
+    
     ### Expected Output Format (JSON List of Chunks):
     
 json
@@ -76,25 +149,27 @@ json
   {
     "chunked_data": "Extracted meaningful text chunk...",
     "metadata": {
-      "SDK_Framework_name": "Gemini API",
+      "sdk_framework_name": "Gemini API",
       "href": "https://ai.google.dev/gemini-api/docs/gemini-quickstart",
       "base_url": "https://ai.google.dev/gemini-api/docs",
       "sdk_framework": "SDK",
-      "category": "AI",
       "has_code_snippet": true,
-      "version": "1.2.0"
+      "version": "1.2.0",
+      "domains": ["Technology & Software"],
+      "subdomains": ["AI & Machine Learning", "Programming & Development"]
     }
   },
   {
     "chunked_data": "Another meaningful text chunk...",
     "metadata": {
-      "SDK_Framework_name": "Gemini API",
+      "sdk_framework_name": "Gemini API",
       "href": "https://ai.google.dev/gemini-api/docs/python-client",
       "base_url": "https://ai.google.dev/gemini-api/docs",
       "sdk_framework": "SDK",
-      "category": "AI",
       "has_code_snippet": false,
-      "version": null
+      "version": null,
+      "domains": ["Technology & Software"],
+      "subdomains": ["AI & Machine Learning", "Programming & Development"]
     }
   }
 ]
@@ -135,25 +210,16 @@ Return only the top 4 URLs that best meet these criteria in a structured JSON li
   "base_url": "",
 	"href_urls": [],
 	"sdk_framework": "",
-	"category": "",
 	"chunk_id": "",
 	"supported_languages": [],
 	"versions": []
 }
-- "SDK_Framework_name": The **name** of the SDK or framework being described.
+- "sdk_framework_name": The **name** of the SDK or framework being described.
 - "href_url": The **original URL** from which the content was scraped (provided as input write it as it is).
 - "base_url": The base url of the SDK or Framework whose href is scraped (provided as input so write it as it is).
 - "sdk_framework": Strictly Binary classification only:
     - **SDK** → If the document primarily discusses an SDK (e.g., Python SDK, Node.js SDK).
     - **Framework** → If the document primarily describes a development framework (e.g., TensorFlow, React, FastAPI).
-- "category": The **domain** the SDK or framework belongs to. Choose from the following:
-    - **AI**
-    - **Cloud**
-    - **Web**
-    - **Mobile**
-    - **Database**
-    - **Security**
-    - **DevOps**
 
 """
 
@@ -171,14 +237,6 @@ Since the entire request belongs to the **same SDK or framework**, extract and i
 - **"href_urls"**: A list of URLs from which the content was scraped. (provided as input so write it as it is).
 - "base_url": The base url of the SDK or Framework whose href is scraped (provided as input so write it as it is).
 - **"sdk_framework"**: Strictly binary classification Specifies whether the document is about an **SDK** or a **Framework** only.
-- **"category"**: The domain of the SDK or framework, selected from:
-  - **AI**
-  - **Cloud**
-  - **Web**
-  - **Mobile**
-  - **Database**
-  - **Security**
-  - **DevOps**
 - **"supported_languages"**: List of programming languages supported by the SDK/framework analyse the whole content all the code snippets along with the additional code snippets than list out all the programming languages (e.g., Python, JavaScript, Java, curl, C# etc.). If not found, set as an empty list.
 - **"versions"**: List of all versions mentioned in the documentation content, hrefs, base urls. If no version is found, set as an empty list.
 
@@ -189,14 +247,13 @@ Since the entire request belongs to the **same SDK or framework**, extract and i
   {
     "chunked_data": "Gemini API provides powerful AI capabilities for text and image processing. It allows developers to integrate generative AI into applications with pre-trained models. The API supports multimodal inputs and has endpoints for text completion, image recognition, and structured data extraction. Designed for high performance and scalability, it is suitable for production-ready AI applications.",
     "metadata": {
-    "SDK_Framework_name": "Gemini API",
+    "sdk_framework_name": "Gemini API",
     "base_url": https://ai.google.dev/gemini-api/docs",
     "href_urls": [
         "https://ai.google.dev/gemini-api/docs",
         "https://ai.google.dev/gemini-api/gemini-quickstart",
     ],
     "sdk_framework": "SDK",
-    "category": "AI",
     "supported_languages": ["Python", "JavaScript"],
     "versions": ["1.2.0", "1.3.0"]
     }
