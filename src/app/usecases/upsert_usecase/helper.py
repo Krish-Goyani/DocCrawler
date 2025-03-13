@@ -118,16 +118,31 @@ class PineconeUtils:
                     except Exception as e:
                         pass
                 try:
-                    metadata["SDK_Framework_name"] = str(
-                        metadata["SDK_Framework_name"]
+                    if "domains" in metadata and metadata["domains"]:
+                        metadata["domains"] = str(metadata["domains"]).lower()
+                    else:
+                        del metadata["domains"]
+                except Exception as e:
+                    pass
+                try:
+                    if "subdomains" in metadata and metadata["subdomains"]:
+                        metadata["subdomains"] = str(
+                            metadata["subdomains"]
+                        ).lower()
+                    else:
+                        del metadata["subdomains"]
+                except Exception as e:
+                    pass
+
+                try:
+                    metadata["sdk_framework_name"] = str(
+                        metadata["sdk_framework_name"]
                     ).lower()
-                    metadata["category"] = str(metadata["category"]).lower()
                     metadata["sdk_framework"] = str(
                         metadata["sdk_framework"]
                     ).lower()
                 except Exception as e:
                     pass
-
                 # Create a record in the format Pinecone expects
                 # Keep chunked_data as a separate field
                 record = {

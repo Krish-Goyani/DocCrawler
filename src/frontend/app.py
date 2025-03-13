@@ -390,7 +390,7 @@ class DocumentCrawlerApp:
                 return
 
             metadata = {
-                "SDK_Framework_name": str(sdk_framework_name).lower(),
+                "sdk_framework_name": str(sdk_framework_name).lower(),
                 "base_url": base_url,
                 "sdk_framework": str(sdk_framework).lower(),
                 "category": str(category).lower(),
